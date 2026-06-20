@@ -18,7 +18,7 @@ Un Pokédex stratégique augmenté par la data science.
 | Machine Learning | scikit-learn |
 | Visualisations | Plotly |
 | MLOps | MLflow, Dagshub |
-| Frontend | React, Tailwind CSS v4 (PWA) |
+| Frontend | React, TypeScript, Tailwind CSS v4 (PWA) |
 | Containerisation | Docker, Docker Compose |
 | CI/CD | GitHub Actions |
 | Qualité du code | Ruff, Prettier, pre-commit |
@@ -79,7 +79,7 @@ pokemako/
 ├── api/            # Backend FastAPI — endpoints REST, rate limiting, auth
 ├── etl/            # Ingestion PokéAPI → PostgreSQL
 ├── ml/             # Entraînement des modèles, scripts scikit-learn
-├── frontend/       # React + Tailwind CSS v4 (Vite)
+├── frontend/       # React + TypeScript + Tailwind CSS v4 (Vite)
 ├── data/           # Données brutes et exports (gitignored)
 ├── docs/           # Documentation technique
 ├── .devcontainer/  # Dev Container VS Code
@@ -119,6 +119,6 @@ pre-commit run --all-files
 | Outil | Périmètre |
 |---|---|
 | Ruff | Python — lint + format |
-| Prettier | JS / CSS / JSON — format |
+| Prettier | JS / TS / CSS — format |
 | check-yaml | Fichiers YAML |
-| check-added-large-files | Bloque les fichiers > 500KB |
+| check-added-large-files | Bloque les fichiers > 50 MB |
