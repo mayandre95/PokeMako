@@ -16,12 +16,12 @@ config = context.config
 # 2. Charger les variables d'environnement (.env)
 load_dotenv()
 
-# 3. Injecter l'URL dynamique avec les accès PostgreSQL
-config.set_main_option(
-    "sqlalchemy.url",
+# 3. Injecter l'URL dynamique : DATABASE_URL en priorité, sinon variables individuelles
+database_url = os.getenv("DATABASE_URL") or (
     f"postgresql://{os.getenv('POSTGRES_USER')}:{os.getenv('POSTGRES_PASSWORD')}"
-    f"@{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT')}/{os.getenv('POSTGRES_DB')}",
+    f"@{os.getenv('POSTGRES_HOST')}:{os.getenv('POSTGRES_PORT')}/{os.getenv('POSTGRES_DB')}"
 )
+config.set_main_option("sqlalchemy.url", database_url)
 
 # 4. Définir les métadonnées pour le mode 'autogenerate'
 target_metadata = Base.metadata

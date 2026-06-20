@@ -12,8 +12,15 @@ class Type(Base):
 class Pokemon(Base):
     __tablename__ = "pokemon"
     id = Column(Integer, primary_key=True)  # ID PokéAPI
-    name = Column(String(100), nullable=False)
+    name_en = Column(String(100), nullable=False)
+    name_fr = Column(String(100))
     base_experience = Column(Integer)
+
+    @property
+    def name(self) -> str:
+        """Français en priorité, anglais en fallback."""
+        return self.name_fr or self.name_en
+
     height = Column(Integer)
     weight = Column(Integer)
     sprite_url = Column(String(255))

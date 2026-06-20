@@ -32,6 +32,7 @@ services:
     volumes:
       - ./api:/app
       - .:/workspace
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       db:
         condition: service_healthy
