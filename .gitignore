@@ -1,2 +1,41 @@
+# Perso
 pokedex_analytics_spec_v2.md
 pokedex_analytics_tickets_v2.md
+Procédure.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+mlruns/
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.next/
+.npm/
+
+# Environnement
+.env
+*.env.local
+
+# Données (trop lourdes pour Git)
+data/raw/
+data/processed/
+*.csv
+*.parquet
+*.pkl
+*.joblib
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
