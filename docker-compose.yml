@@ -31,6 +31,7 @@ services:
       - "8000:8000"
     volumes:
       - ./api:/app
+      - .:/workspace
     depends_on:
       db:
         condition: service_healthy
