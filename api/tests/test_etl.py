@@ -57,6 +57,9 @@ SPECIES_FIXTURE = {
 }
 
 
+# --- Tests unitaires (sans base de données) ---
+
+
 def test_fetch_json_success():
     client = MagicMock(spec=httpx.Client)
     mock_resp = MagicMock()
@@ -83,37 +86,18 @@ def test_fetch_json_retries_on_network_error():
     assert client.get.call_count == 2
 
 
-def test_process_pokemon_extracts_bilingual_names():
-    """Les noms FR et EN doivent être extraits depuis species.names."""
-    client = MagicMock(spec=httpx.Client)
-    db = MagicMock()
+def test_pokemon_name_property_prefers_french():
+    from models import Pokemon
 
-    captured = {}
+    p = Pokemon(name_en="Bulbasaur", name_fr="Bulbizarre")
+    assert p.name == "Bulbizarre"
 
-    def fake_execute(stmt):
-        # Capture les valeurs passées à pg_insert(Pokemon)
-        try:
-            compiled = stmt.compile()
-            params = compiled.params
-            if "name_en" in params:
-                captured.update(params)
-        except Exception:
-            pass
 
-    db.execute.side_effect = fake_execute
+def test_pokemon_name_property_falls_back_to_english():
+    from models import Pokemon
 
-    with (
-        patch(
-            "fetch_pokemon.fetch_json", side_effect=[POKEMON_FIXTURE, SPECIES_FIXTURE]
-        ),
-        patch("fetch_pokemon.time.sleep"),
-        patch("fetch_pokemon._upsert_type", return_value=1),
-        patch("fetch_pokemon._upsert_ability"),
-        patch("fetch_pokemon._upsert_move"),
-    ):
-        fetch_pokemon.process_pokemon(client, db, 1)
-
-    db.commit.assert_called_once()
+    p = Pokemon(name_en="Bulbasaur", name_fr=None)
+    assert p.name == "Bulbasaur"
 
 
 def test_process_pokemon_commits_once():
@@ -133,3 +117,31 @@ def test_process_pokemon_commits_once():
         fetch_pokemon.process_pokemon(client, db, 1)
 
     db.commit.assert_called_once()
+
+
+# --- Test d'intégration (base de données réelle) ---
+
+
+def test_process_pokemon_inserts_bilingual_names():
+    """Intégration : vérifie l'insertion réelle en base avec noms bilingues."""
+    from database import SessionLocal
+    from models import Pokemon
+
+    client_mock = MagicMock(spec=httpx.Client)
+
+    with SessionLocal() as db:
+        with (
+            patch(
+                "fetch_pokemon.fetch_json",
+                side_effect=[POKEMON_FIXTURE, SPECIES_FIXTURE],
+            ),
+            patch("fetch_pokemon.time.sleep"),
+        ):
+            fetch_pokemon.process_pokemon(client_mock, db, 1)
+
+        pokemon = db.query(Pokemon).filter_by(id=1).first()
+        assert pokemon is not None
+        assert pokemon.name_en == "Bulbasaur"
+        assert pokemon.name_fr == "Bulbizarre"
+        assert pokemon.name == "Bulbizarre"
+        assert pokemon.hp == 45
