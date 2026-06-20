@@ -1,5 +1,9 @@
 # PokéMako — Pokédex Analytics
 
+![CI](https://github.com/mayandre95/Pokedex/actions/workflows/ci.yml/badge.svg)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=mayandre95_Pokedex&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=mayandre95_Pokedex)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=mayandre95_Pokedex&metric=coverage)](https://sonarcloud.io/summary/new_code?id=mayandre95_Pokedex)
+
 Un Pokédex stratégique augmenté par la data science.
 
 > **Question centrale :** « Peut-on mesurer objectivement la puissance d'un Pokémon et prédire l'issue d'un combat ? »
