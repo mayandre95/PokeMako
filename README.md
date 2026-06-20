@@ -16,7 +16,7 @@ Un Pokédex stratégique augmenté par la data science.
 |---|---|
 | Source de données | PokéAPI |
 | ETL & analyse | Python, pandas |
-| Base de données | PostgreSQL |
+| Base de données | PostgreSQL, SQLAlchemy, Alembic |
 | Cache | Redis |
 | Backend | FastAPI |
 | Machine Learning | scikit-learn |
