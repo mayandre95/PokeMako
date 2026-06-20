@@ -25,7 +25,7 @@ Un Pokédex stratégique augmenté par la data science.
 | Frontend | React, TypeScript, Tailwind CSS v4 (PWA) |
 | Containerisation | Docker, Docker Compose |
 | CI/CD | GitHub Actions |
-| Qualité du code | Ruff, Prettier, pre-commit |
+| Qualité du code | Ruff, Prettier, pre-commit, SonarCloud |
 | Infrastructure | Terraform |
 
 ---
@@ -126,3 +126,5 @@ pre-commit run --all-files
 | Prettier | JS / TS / CSS — format |
 | check-yaml | Fichiers YAML |
 | check-added-large-files | Bloque les fichiers > 50 MB |
+| SonarCloud | Quality gate, sécurité, couverture de tests |
+| GitHub Actions | CI — lint + tests + docker build à chaque push |
