@@ -32,5 +32,5 @@
       }
     }
   },
-  "postCreateCommand": "pip install -r requirements.txt && pre-commit install"
+  "postCreateCommand": "pip install -r requirements.txt && pre-commit install && cd frontend && npm install"
 }
