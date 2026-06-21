@@ -119,6 +119,118 @@ def test_process_pokemon_commits_once():
     db.commit.assert_called_once()
 
 
+def test_fetch_json_raises_after_max_retries():
+    """fetch_json doit propager l'exception après MAX_RETRIES échecs."""
+    client = MagicMock(spec=httpx.Client)
+    client.get.side_effect = httpx.RequestError("timeout")
+
+    with patch("fetch_pokemon.time.sleep"):
+        try:
+            fetch_pokemon.fetch_json(client, "http://example.com")
+            assert False, "Aurait dû lever une exception"
+        except httpx.RequestError:
+            pass
+
+    assert client.get.call_count == fetch_pokemon.MAX_RETRIES
+
+
+def test_process_pokemon_skips_duplicate_move():
+    """process_pokemon doit ignorer un move_id déjà traité (seen_moves)."""
+    client = MagicMock(spec=httpx.Client)
+    db = MagicMock()
+
+    fixture_with_duplicate_move = {
+        **POKEMON_FIXTURE,
+        "moves": [
+            {
+                "move": {"name": "tackle", "url": ".../33/"},
+                "version_group_details": [
+                    {"move_learn_method": {"name": "level-up"}, "level_learned_at": 1}
+                ],
+            },
+            {
+                "move": {"name": "tackle", "url": ".../33/"},  # doublon
+                "version_group_details": [
+                    {"move_learn_method": {"name": "level-up"}, "level_learned_at": 1}
+                ],
+            },
+        ],
+    }
+
+    with (
+        patch(
+            "fetch_pokemon.fetch_json",
+            side_effect=[fixture_with_duplicate_move, SPECIES_FIXTURE],
+        ),
+        patch("fetch_pokemon.time.sleep"),
+        patch("fetch_pokemon._upsert_type", return_value=1),
+        patch("fetch_pokemon._upsert_ability"),
+        patch("fetch_pokemon._upsert_move") as mock_upsert_move,
+    ):
+        fetch_pokemon.process_pokemon(client, db, 1)
+
+    mock_upsert_move.assert_called_once()
+
+
+def test_main_skips_when_db_full():
+    """main() ne lance pas l'ETL si la base contient déjà 1025 Pokémon."""
+    mock_db = MagicMock()
+    mock_db.query.return_value.count.return_value = 1025
+    mock_db.__enter__ = lambda s: mock_db
+    mock_db.__exit__ = MagicMock(return_value=False)
+
+    with (
+        patch("fetch_pokemon.SessionLocal", return_value=mock_db),
+        patch("fetch_pokemon.run") as mock_run,
+    ):
+        fetch_pokemon.main()
+
+    mock_run.assert_not_called()
+
+
+def test_main_runs_etl_when_db_empty():
+    """main() lance l'ETL si la base est vide."""
+    mock_db = MagicMock()
+    mock_db.query.return_value.count.return_value = 0
+    mock_db.__enter__ = lambda s: mock_db
+    mock_db.__exit__ = MagicMock(return_value=False)
+
+    with (
+        patch("fetch_pokemon.SessionLocal", return_value=mock_db),
+        patch("fetch_pokemon.run") as mock_run,
+    ):
+        fetch_pokemon.main(start=1, end=10)
+
+    mock_run.assert_called_once_with(1, 10)
+
+
+def test_run_continues_after_pokemon_error():
+    """run() doit continuer sur les Pokémon suivants si l'un échoue."""
+    mock_db = MagicMock()
+    mock_db.__enter__ = lambda s: mock_db
+    mock_db.__exit__ = MagicMock(return_value=False)
+
+    call_count = 0
+
+    def process_side_effect(client, db, pid):
+        nonlocal call_count
+        call_count += 1
+        if pid == 1:
+            raise ValueError("Erreur simulée")
+
+    with (
+        patch("fetch_pokemon.SessionLocal", return_value=mock_db),
+        patch("fetch_pokemon.httpx.Client") as mock_client_cls,
+        patch("fetch_pokemon.process_pokemon", side_effect=process_side_effect),
+    ):
+        mock_client_cls.return_value.__enter__ = lambda s: MagicMock()
+        mock_client_cls.return_value.__exit__ = MagicMock(return_value=False)
+        fetch_pokemon.run(1, 3)
+
+    assert call_count == 3
+    mock_db.rollback.assert_called_once()
+
+
 # --- Test d'intégration (base de données réelle) ---
 
 
