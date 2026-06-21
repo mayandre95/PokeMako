@@ -29,6 +29,14 @@ DELAY = 0.3  # secondes entre chaque requête (rate limiting)
 MAX_RETRIES = 3
 
 
+def main(start: int = 1, end: int = 1025) -> None:
+    with SessionLocal() as db:
+        if db.query(Pokemon).count() >= 1025:
+            log.info("Base déjà peuplée — ETL ignoré.")
+            return
+    run(start, end)
+
+
 def fetch_json(client: httpx.Client, url: str) -> dict:
     for attempt in range(MAX_RETRIES):
         try:
@@ -172,6 +180,6 @@ def run(start: int, end: int) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="ETL PokéAPI → PostgreSQL")
     parser.add_argument("--start", type=int, default=1)
-    parser.add_argument("--end", type=int, default=151)
+    parser.add_argument("--end", type=int, default=1025)
     args = parser.parse_args()
-    run(args.start, args.end)
+    main(args.start, args.end)
