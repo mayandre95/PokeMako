@@ -51,7 +51,7 @@ def fetch_json(client: httpx.Client, url: str) -> dict:
                 "Retry %d/%d — %s (attente %ds)", attempt + 1, MAX_RETRIES, exc, wait
             )
             time.sleep(wait)
-    return {}
+    return {}  # pragma: no cover
 
 
 def _upsert_type(db, name: str) -> int:
