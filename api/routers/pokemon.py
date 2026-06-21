@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
@@ -8,9 +10,15 @@ from schemas.pokemon import PokemonResponse
 
 router = APIRouter(prefix="/pokemon", tags=["pokemon"])
 
+DbSession = Annotated[Session, Depends(get_db)]
 
-@router.get("/{pokemon_id}", response_model=PokemonResponse)
-def get_pokemon(pokemon_id: int, db: Session = Depends(get_db)):
+
+@router.get(
+    "/{pokemon_id}",
+    response_model=PokemonResponse,
+    responses={404: {"description": "Pokémon introuvable"}},
+)
+def get_pokemon(pokemon_id: int, db: DbSession):
     cache_key = f"pokemon:{pokemon_id}"
 
     if cached := get_cached(cache_key):
