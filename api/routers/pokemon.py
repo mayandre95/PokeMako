@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
+from typing import Annotated
 
 from cache.redis import get_cached, set_cache
 from database import get_db
@@ -18,7 +19,9 @@ RATE_LIMIT = "30/minute"
     responses={429: {"description": "Trop de requêtes — réessayez dans 60s"}},
 )
 @limiter.limit(RATE_LIMIT)
-def get_pokemon(request: Request, pokemon_id: int, db: Session = Depends(get_db)):
+def get_pokemon(
+    request: Request, pokemon_id: int, db: Annotated[Session, Depends(get_db)]
+):
     cache_key = f"pokemon:{pokemon_id}"
 
     if cached := get_cached(cache_key):
