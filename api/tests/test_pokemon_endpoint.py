@@ -38,7 +38,9 @@ def _make_pokemon():
 
 def _make_db(pokemon=None):
     s = MagicMock()
-    s.query.return_value.filter.return_value.first.return_value = pokemon
+    s.query.return_value.options.return_value.filter.return_value.first.return_value = (
+        pokemon
+    )
     return s
 
 

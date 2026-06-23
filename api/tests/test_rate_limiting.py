@@ -16,7 +16,7 @@ def test_rate_limit_pokemon_passes_under_limit(client):
     from database import get_db
 
     mock_session = MagicMock()
-    mock_session.query.return_value.filter.return_value.first.return_value = None
+    mock_session.query.return_value.options.return_value.filter.return_value.first.return_value = None
 
     app.dependency_overrides[get_db] = lambda: mock_session
     try:

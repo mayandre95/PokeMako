@@ -61,6 +61,9 @@ services:
       - "3000:3000"
     environment:
       - VITE_API_URL=${VITE_API_URL}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules   # volume anonyme : protège les node_modules Linux du container
     depends_on:
       - api
 

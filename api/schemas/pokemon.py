@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class PokemonResponse(BaseModel):
@@ -22,3 +22,10 @@ class PokemonResponse(BaseModel):
     is_mythical: bool
     sprite_url: str | None
     artwork_url: str | None
+    types: list[str] = []
+
+    @field_validator("types", mode="before")
+    @classmethod
+    def coerce_types(cls, v: list) -> list[str]:
+        # Accepte str (depuis le cache Redis) et PokemonType ORM (depuis la DB)
+        return [item if isinstance(item, str) else item.type.name for item in v]
