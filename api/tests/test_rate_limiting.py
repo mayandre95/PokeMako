@@ -13,14 +13,22 @@ def client():
 
 def test_rate_limit_pokemon_passes_under_limit(client):
     """Les 5 premières requêtes passent (limite à 30/minute)."""
-    with (
-        patch("routers.pokemon.get_cached", return_value=None),
-        patch("routers.pokemon.set_cache"),
-        patch("routers.pokemon.get_db"),
-    ):
-        for _ in range(5):
-            r = client.get("/pokemon/1")
-            assert r.status_code in (200, 404)
+    from database import get_db
+
+    mock_session = MagicMock()
+    mock_session.query.return_value.filter.return_value.first.return_value = None
+
+    app.dependency_overrides[get_db] = lambda: mock_session
+    try:
+        with (
+            patch("routers.pokemon.get_cached", return_value=None),
+            patch("routers.pokemon.set_cache"),
+        ):
+            for _ in range(5):
+                r = client.get("/pokemon/1")
+                assert r.status_code in (200, 404)
+    finally:
+        app.dependency_overrides.clear()
 
 
 def test_db_health_requires_api_key(client, monkeypatch):
