@@ -1,24 +1,24 @@
-from typing import Annotated
-
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from cache.redis import get_cached, set_cache
 from database import get_db
+from limiter import limiter
 from models import Pokemon
 from schemas.pokemon import PokemonResponse
+from sqlalchemy.orm import Session
 
-router = APIRouter(prefix="/pokemon", tags=["pokemon"])
+router = APIRouter(prefix="/pokemon", tags=["Pokémon"])
 
-DbSession = Annotated[Session, Depends(get_db)]
+RATE_LIMIT = "30/minute"
 
 
 @router.get(
     "/{pokemon_id}",
     response_model=PokemonResponse,
-    responses={404: {"description": "Pokémon introuvable"}},
+    responses={429: {"description": "Trop de requêtes — réessayez dans 60s"}},
 )
-def get_pokemon(pokemon_id: int, db: DbSession):
+@limiter.limit(RATE_LIMIT)
+def get_pokemon(request: Request, pokemon_id: int, db: Session = Depends(get_db)):
     cache_key = f"pokemon:{pokemon_id}"
 
     if cached := get_cached(cache_key):
