@@ -6,7 +6,7 @@ from database import get_db
 from limiter import limiter
 from models import Pokemon
 from schemas.pokemon import PokemonResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 router = APIRouter(prefix="/pokemon", tags=["Pokémon"])
 
@@ -27,7 +27,12 @@ def get_pokemon(
     if cached := get_cached(cache_key):
         return cached
 
-    pokemon = db.query(Pokemon).filter(Pokemon.id == pokemon_id).first()
+    pokemon = (
+        db.query(Pokemon)
+        .options(joinedload(Pokemon.types))
+        .filter(Pokemon.id == pokemon_id)
+        .first()
+    )
     if not pokemon:
         raise HTTPException(status_code=404, detail="Pokémon introuvable")
 
