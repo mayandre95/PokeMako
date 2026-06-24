@@ -17,6 +17,7 @@ function conditionLabel(c: EvolutionCondition): string {
     let label = `Niv. ${c.min_level}`
     if (c.time_of_day === 'day') label += '\n(jour)'
     else if (c.time_of_day === 'night') label += '\n(nuit)'
+    else if (c.time_of_day === 'dusk') label += '\n(zénith)'
     return label
   }
   if (c.min_happiness) {
@@ -25,6 +26,8 @@ function conditionLabel(c: EvolutionCondition): string {
     else if (c.time_of_day === 'night') label += '\n(nuit)'
     return label
   }
+  if (c.known_move_type) return `Attaque\n${formatName(c.known_move_type)}`
+  if (c.location) return formatName(c.location)
   return formatName(c.trigger)
 }
 
@@ -59,11 +62,12 @@ function NodeCard({
   )
 }
 
-function Arrow({ condition }: { condition: EvolutionCondition }) {
+function Arrow({ conditions }: { conditions: EvolutionCondition[] }) {
+  const label = conditions.map(conditionLabel).join('\nou ')
   return (
     <div className="flex flex-col items-center mx-1 text-gray-500 min-w-[48px]">
       <span className="text-xs text-center whitespace-pre-line leading-tight">
-        {conditionLabel(condition)}
+        {label}
       </span>
       <span className="text-lg">→</span>
     </div>
@@ -84,7 +88,9 @@ function Branch({
         <div className="flex flex-col gap-2">
           {node.evolves_to.map((child) => (
             <div key={child.id} className="flex items-center">
-              {child.conditions[0] && <Arrow condition={child.conditions[0]} />}
+              {child.conditions.length > 0 && (
+                <Arrow conditions={child.conditions} />
+              )}
               <Branch node={child} currentId={currentId} />
             </div>
           ))}
@@ -102,7 +108,7 @@ interface Props {
 export function EvolutionTree({ root, currentId }: Props) {
   return (
     <div className="overflow-x-auto">
-      <div className="flex items-center min-w-max py-2">
+      <div className="flex items-center min-w-max py-2 px-2">
         <Branch node={root} currentId={currentId} />
       </div>
     </div>

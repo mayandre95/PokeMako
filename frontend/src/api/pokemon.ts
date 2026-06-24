@@ -30,6 +30,8 @@ export interface EvolutionCondition {
   held_item: string | null
   min_happiness: number | null
   time_of_day: string
+  location: string | null
+  known_move_type: string | null
 }
 
 export interface EvolutionNode {
@@ -67,30 +69,44 @@ interface RawChainLink {
     held_item: { name: string } | null
     min_happiness: number | null
     time_of_day: string
+    location: { name: string } | null
+    known_move_type: { name: string } | null
   }>
   evolves_to: RawChainLink[]
 }
 
 function parseChain(link: RawChainLink): EvolutionNode {
   const id = Number(link.species.url.split('/').filter(Boolean).pop())
-  const d = link.evolution_details[0] ?? null
   return {
     id,
     name: link.species.name,
     sprite_url: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
-    conditions: d
-      ? [
-          {
-            trigger: d.trigger.name,
-            min_level: d.min_level,
-            item: d.item?.name ?? null,
-            held_item: d.held_item?.name ?? null,
-            min_happiness: d.min_happiness,
-            time_of_day: d.time_of_day,
-          },
-        ]
-      : [],
+    conditions: link.evolution_details.map((d) => ({
+      trigger: d.trigger.name,
+      min_level: d.min_level,
+      item: d.item?.name ?? null,
+      held_item: d.held_item?.name ?? null,
+      min_happiness: d.min_happiness,
+      time_of_day: d.time_of_day,
+      location: d.location?.name ?? null,
+      known_move_type: d.known_move_type?.name ?? null,
+    })),
     evolves_to: link.evolves_to.map(parseChain),
+  }
+}
+
+function collectIds(node: EvolutionNode): number[] {
+  return [node.id, ...node.evolves_to.flatMap(collectIds)]
+}
+
+function applyNames(
+  node: EvolutionNode,
+  nameMap: Map<number, string>
+): EvolutionNode {
+  return {
+    ...node,
+    name: nameMap.get(node.id) ?? node.name,
+    evolves_to: node.evolves_to.map((child) => applyNames(child, nameMap)),
   }
 }
 
@@ -103,5 +119,14 @@ export async function fetchEvolutionChain(
   const chainRes = await fetch(species.evolution_chain.url)
   if (!chainRes.ok) return null
   const chain = await chainRes.json()
-  return parseChain(chain.chain)
+  const tree = parseChain(chain.chain)
+
+  const ids = collectIds(tree)
+  const pokemonList = await Promise.all(
+    ids.map((pid) => fetchPokemon(pid).catch(() => null))
+  )
+  const nameMap = new Map(
+    pokemonList.filter(Boolean).map((p) => [p!.id, p!.name_fr ?? p!.name_en])
+  )
+  return applyNames(tree, nameMap)
 }
