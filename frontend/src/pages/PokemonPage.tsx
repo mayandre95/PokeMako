@@ -1,12 +1,19 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { fetchFlavorText, fetchPokemon, type Pokemon } from '../api/pokemon'
+import {
+  fetchEvolutionChain,
+  fetchFlavorText,
+  fetchPokemon,
+  type EvolutionNode,
+  type Pokemon,
+} from '../api/pokemon'
 import { PokemonCard } from '../components/PokemonCard'
 
 export function PokemonPage() {
   const { id } = useParams<{ id: string }>()
   const [pokemon, setPokemon] = useState<Pokemon | null>(null)
   const [flavorText, setFlavorText] = useState('')
+  const [evolutionTree, setEvolutionTree] = useState<EvolutionNode | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -15,10 +22,15 @@ export function PokemonPage() {
     setLoading(true)
     setError(null)
 
-    Promise.all([fetchPokemon(id), fetchFlavorText(Number(id))])
-      .then(([poke, flavor]) => {
+    Promise.all([
+      fetchPokemon(id),
+      fetchFlavorText(Number(id)),
+      fetchEvolutionChain(Number(id)),
+    ])
+      .then(([poke, flavor, evoChain]) => {
         setPokemon(poke)
         setFlavorText(flavor)
+        setEvolutionTree(evoChain)
       })
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false))
@@ -50,7 +62,11 @@ export function PokemonPage() {
           ← Retour
         </Link>
       </div>
-      <PokemonCard pokemon={pokemon} flavorText={flavorText} />
+      <PokemonCard
+        pokemon={pokemon}
+        flavorText={flavorText}
+        evolutionTree={evolutionTree}
+      />
     </div>
   )
 }
