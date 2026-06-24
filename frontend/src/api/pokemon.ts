@@ -77,11 +77,26 @@ interface RawChainLink {
 
 function parseChain(link: RawChainLink): EvolutionNode {
   const id = Number(link.species.url.split('/').filter(Boolean).pop())
+
+  // Si une Pierre (use-item) coexiste avec des méthodes par lieu (level-up + location),
+  // on supprime les conditions de lieu : ce sont des méthodes Gen 4-7 remplacées
+  // par des Pierres en Gen 8+. Sans ce filtre, Phyllali/Givrali afficheraient
+  // ~6 branches (5 lieux + la pierre) au lieu d'une seule.
+  const raw = link.evolution_details
+  const hasUseItem = raw.some((d) => d.trigger.name === 'use-item')
+  const hasLevelUpLocation = raw.some(
+    (d) => d.trigger.name === 'level-up' && d.location
+  )
+  const details =
+    hasUseItem && hasLevelUpLocation
+      ? raw.filter((d) => !(d.trigger.name === 'level-up' && d.location))
+      : raw
+
   return {
     id,
     name: link.species.name,
     sprite_url: `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`,
-    conditions: link.evolution_details.map((d) => ({
+    conditions: details.map((d) => ({
       trigger: d.trigger.name,
       min_level: d.min_level,
       item: d.item?.name ?? null,

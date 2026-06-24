@@ -1,5 +1,7 @@
 import { Link } from 'react-router-dom'
 import type { EvolutionCondition, EvolutionNode } from '../api/pokemon'
+import { ITEM_FR } from '../constants/itemNames'
+import { TYPE_FR } from '../constants/typeColors'
 
 function formatName(name: string): string {
   return name
@@ -8,25 +10,39 @@ function formatName(name: string): string {
     .join(' ')
 }
 
+function itemName(name: string): string {
+  return ITEM_FR[name] ?? formatName(name)
+}
+
+function typeName(name: string): string {
+  return TYPE_FR[name] ?? formatName(name)
+}
+
 function conditionLabel(c: EvolutionCondition): string {
+  // Échange et Pierre sont des triggers exclusifs, jamais combinés.
   if (c.trigger === 'trade') {
-    return c.held_item ? `Échange\n(${formatName(c.held_item)})` : 'Échange'
+    return c.held_item ? `Échange\n(${itemName(c.held_item)})` : 'Échange'
   }
-  if (c.trigger === 'use-item' && c.item) return formatName(c.item)
+  if (c.trigger === 'use-item' && c.item) return itemName(c.item)
+
+  // Pour les autres triggers, plusieurs conditions peuvent coexister
+  // dans la même entrée (ex : Nymphali = Attaque Fée + Bonheur).
+  const parts: string[] = []
+
   if (c.min_level) {
     let label = `Niv. ${c.min_level}`
-    if (c.time_of_day === 'day') label += '\n(jour)'
-    else if (c.time_of_day === 'night') label += '\n(nuit)'
-    else if (c.time_of_day === 'dusk') label += '\n(zénith)'
-    return label
+    if (c.time_of_day === 'day') label += ' (jour)'
+    else if (c.time_of_day === 'night') label += ' (nuit)'
+    else if (c.time_of_day === 'dusk') label += ' (zénith)'
+    parts.push(label)
   }
-  if (c.min_happiness) {
-    let label = 'Bonheur'
-    if (c.time_of_day === 'day') label += '\n(jour)'
-    else if (c.time_of_day === 'night') label += '\n(nuit)'
-    return label
-  }
-  if (c.known_move_type) return `Attaque\n${formatName(c.known_move_type)}`
+
+  if (c.known_move_type) parts.push(`Attaque ${typeName(c.known_move_type)}`)
+
+  if (c.min_happiness) parts.push('Bonheur')
+
+  if (parts.length > 0) return parts.join('\n+ ')
+
   if (c.location) return formatName(c.location)
   return formatName(c.trigger)
 }
@@ -62,12 +78,11 @@ function NodeCard({
   )
 }
 
-function Arrow({ conditions }: { conditions: EvolutionCondition[] }) {
-  const label = conditions.map(conditionLabel).join('\nou ')
+function Arrow({ condition }: { condition: EvolutionCondition }) {
   return (
     <div className="flex flex-col items-center mx-1 text-gray-500 min-w-[48px]">
       <span className="text-xs text-center whitespace-pre-line leading-tight">
-        {label}
+        {conditionLabel(condition)}
       </span>
       <span className="text-lg">→</span>
     </div>
@@ -81,16 +96,46 @@ function Branch({
   node: EvolutionNode
   currentId: number
 }) {
+  // Chaque condition d'un enfant devient une branche visuelle distincte.
+  // Les conditions produisant le même label sont dédupliquées (ex : même pierre
+  // référencée dans plusieurs générations).
+  type ExpandedChild = {
+    child: EvolutionNode
+    condition: EvolutionCondition | null
+    key: string
+  }
+  const expandedChildren = node.evolves_to.flatMap((child): ExpandedChild[] => {
+    const seen = new Set<string>()
+    const allLabels = child.conditions.map(conditionLabel)
+    const unique = child.conditions.filter((c, i) => {
+      const label = allLabels[i]
+      // Supprimer si un autre label étend celui-ci (ex : "Attaque Fée" ⊂ "Attaque Fée\n+ Bonheur")
+      if (
+        allLabels.some((other, j) => j !== i && other.startsWith(label + '\n+'))
+      )
+        return false
+      if (seen.has(label)) return false
+      seen.add(label)
+      return true
+    })
+    if (unique.length === 0) {
+      return [{ child, condition: null, key: String(child.id) }]
+    }
+    return unique.map((c, i) => ({
+      child,
+      condition: c,
+      key: `${child.id}-${i}`,
+    }))
+  })
+
   return (
     <div className="flex items-center">
       <NodeCard node={node} isCurrent={node.id === currentId} />
-      {node.evolves_to.length > 0 && (
+      {expandedChildren.length > 0 && (
         <div className="flex flex-col gap-2">
-          {node.evolves_to.map((child) => (
-            <div key={child.id} className="flex items-center">
-              {child.conditions.length > 0 && (
-                <Arrow conditions={child.conditions} />
-              )}
+          {expandedChildren.map(({ child, condition, key }) => (
+            <div key={key} className="flex items-center">
+              {condition && <Arrow condition={condition} />}
               <Branch node={child} currentId={currentId} />
             </div>
           ))}
