@@ -1,6 +1,8 @@
 import { Pokemon } from '../api/pokemon'
 import { TypeBadge } from './TypeBadge'
 import { StatBar } from './StatBar'
+import type { EvolutionNode } from '../api/pokemon'
+import { EvolutionTree } from './EvolutionTree'
 
 const STATS: { label: string; key: keyof Pokemon }[] = [
   { label: 'HP', key: 'hp' },
@@ -14,9 +16,10 @@ const STATS: { label: string; key: keyof Pokemon }[] = [
 interface Props {
   pokemon: Pokemon
   flavorText: string
+  evolutionTree: EvolutionNode | null
 }
 
-export function PokemonCard({ pokemon, flavorText }: Props) {
+export function PokemonCard({ pokemon, flavorText, evolutionTree }: Props) {
   const displayName = pokemon.name_fr ?? pokemon.name_en
   const numStr = String(pokemon.id).padStart(4, '0')
 
@@ -84,6 +87,15 @@ export function PokemonCard({ pokemon, flavorText }: Props) {
           ))}
         </div>
       </section>
+
+      {evolutionTree && (
+        <section aria-label="Chaîne d'évolution" className="mt-6">
+          <h2 className="font-semibold text-gray-700 mb-3">
+            Chaîne d'évolution
+          </h2>
+          <EvolutionTree root={evolutionTree} currentId={pokemon.id} />
+        </section>
+      )}
 
       {/* Infos physiques */}
       <div className="flex justify-around mt-6 text-center text-sm text-gray-600 border-t pt-4">
