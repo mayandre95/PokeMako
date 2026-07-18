@@ -62,7 +62,13 @@ def _area_name_fr(client: httpx.Client, slug: str) -> str | None:
     return fr
 
 
-@router.get("/{pokemon_id}/encounters")
+@router.get(
+    "/{pokemon_id}/encounters",
+    responses={
+        404: {"description": "Pokémon introuvable"},
+        429: {"description": "Trop de requêtes — réessayez dans 60s"},
+    },
+)
 @limiter.limit(RATE_LIMIT)
 def get_encounters(request: Request, pokemon_id: int):
     cache_key = f"encounters:{pokemon_id}"
