@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
+  fetchEncounters,
   fetchEvolutionChain,
   fetchFlavorText,
   fetchPokemon,
+  type EncountersData,
   type EvolutionNode,
   type Pokemon,
 } from '../api/pokemon'
@@ -12,6 +14,9 @@ import { PokemonCard } from '../components/PokemonCard'
 export function PokemonPage() {
   const { id } = useParams<{ id: string }>()
   const [pokemon, setPokemon] = useState<Pokemon | null>(null)
+  const [encountersData, setEncountersData] = useState<EncountersData | null>(
+    null
+  )
   const [flavorText, setFlavorText] = useState('')
   const [evolutionTree, setEvolutionTree] = useState<EvolutionNode | null>(null)
   const [loading, setLoading] = useState(true)
@@ -26,11 +31,13 @@ export function PokemonPage() {
       fetchPokemon(id),
       fetchFlavorText(Number(id)),
       fetchEvolutionChain(Number(id)),
+      fetchEncounters(Number(id)),
     ])
-      .then(([poke, flavor, evoChain]) => {
+      .then(([poke, flavor, evoChain, encounters]) => {
         setPokemon(poke)
         setFlavorText(flavor)
         setEvolutionTree(evoChain)
+        setEncountersData(encounters)
       })
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false))
@@ -66,6 +73,7 @@ export function PokemonPage() {
         pokemon={pokemon}
         flavorText={flavorText}
         evolutionTree={evolutionTree}
+        encountersData={encountersData}
       />
     </div>
   )

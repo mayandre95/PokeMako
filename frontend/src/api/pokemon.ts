@@ -48,6 +48,22 @@ export async function fetchPokemon(id: number | string): Promise<Pokemon> {
   return res.json()
 }
 
+export interface Encounter {
+  location_area: string
+  location_area_fr?: string
+  game: string
+  method: string
+  chance: number
+  min_level: number
+  max_level: number
+  conditions: string[]
+}
+
+export interface EncountersData {
+  encounters: Encounter[]
+  has_encounters: boolean
+}
+
 // Texte Pokédex non stocké en DB — récupéré directement depuis PokéAPI
 export async function fetchFlavorText(id: number): Promise<string> {
   const res = await fetch(`${POKEAPI}/pokemon-species/${id}`)
@@ -144,4 +160,10 @@ export async function fetchEvolutionChain(
     pokemonList.filter(Boolean).map((p) => [p!.id, p!.name_fr ?? p!.name_en])
   )
   return applyNames(tree, nameMap)
+}
+
+export async function fetchEncounters(id: number): Promise<EncountersData> {
+  const res = await fetch(`${API_BASE}/pokemon/${id}/encounters`)
+  if (!res.ok) return { encounters: [], has_encounters: false }
+  return res.json()
 }
