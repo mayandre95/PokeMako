@@ -1,8 +1,9 @@
 import { Pokemon } from '../api/pokemon'
 import { TypeBadge } from './TypeBadge'
 import { StatBar } from './StatBar'
-import type { EvolutionNode } from '../api/pokemon'
+import type { EncountersData, EvolutionNode } from '../api/pokemon'
 import { EvolutionTree } from './EvolutionTree'
+import { LocationTable } from './LocationTable'
 
 const STATS: { label: string; key: keyof Pokemon }[] = [
   { label: 'HP', key: 'hp' },
@@ -17,9 +18,15 @@ interface Props {
   pokemon: Pokemon
   flavorText: string
   evolutionTree: EvolutionNode | null
+  encountersData: EncountersData | null
 }
 
-export function PokemonCard({ pokemon, flavorText, evolutionTree }: Props) {
+export function PokemonCard({
+  pokemon,
+  flavorText,
+  evolutionTree,
+  encountersData,
+}: Props) {
   const displayName = pokemon.name_fr ?? pokemon.name_en
   const numStr = String(pokemon.id).padStart(4, '0')
 
@@ -94,6 +101,15 @@ export function PokemonCard({ pokemon, flavorText, evolutionTree }: Props) {
             Chaîne d'évolution
           </h2>
           <EvolutionTree root={evolutionTree} currentId={pokemon.id} />
+        </section>
+      )}
+
+      {encountersData && (
+        <section aria-label="Localisations" className="mt-6">
+          <h2 className="font-semibold text-gray-700 mb-3">
+            Où trouver ce Pokémon ?
+          </h2>
+          <LocationTable encounters={encountersData.encounters} />
         </section>
       )}
 
