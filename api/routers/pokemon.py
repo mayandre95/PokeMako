@@ -20,7 +20,10 @@ NOT_FOUND_DETAIL = "Pokémon introuvable"
 @router.get(
     "/{pokemon_id}",
     response_model=PokemonResponse,
-    responses={429: {"description": "Trop de requêtes — réessayez dans 60s"}},
+    responses={
+        404: {"description": NOT_FOUND_DETAIL},
+        429: {"description": "Trop de requêtes — réessayez dans 60s"},
+    },
 )
 @limiter.limit(RATE_LIMIT)
 def get_pokemon(
