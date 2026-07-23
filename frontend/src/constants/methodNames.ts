@@ -51,3 +51,22 @@ const NEGATIVE_SUFFIXES = ['-no', '-off', '-none', '-not-mentioned', '-normal']
 export function isPositiveCondition(c: string): boolean {
   return !NEGATIVE_SUFFIXES.some((s) => c.endsWith(s))
 }
+
+export const LEARN_METHOD_FR: Record<string, string> = {
+  'level-up': 'Par niveau',
+  machine: 'Capsule / MT',
+  egg: 'Reproduction',
+  tutor: 'Tuteur',
+}
+
+export const DAMAGE_CLASS_FR: Record<string, string> = {
+  physical: 'Physique',
+  special: 'Spécial',
+  status: 'Statut',
+}
+
+export const DAMAGE_CLASS_COLORS: Record<string, string> = {
+  physical: '#C03028', // rouge
+  special: '#6050DC', // violet
+  status: '#A8A878', // gris
+}

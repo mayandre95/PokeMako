@@ -64,6 +64,37 @@ export interface EncountersData {
   has_encounters: boolean
 }
 
+export interface Move {
+  id: number
+  method: string
+  level_learned: number
+  version_group: string
+  name_fr: string | null
+  name_en: string
+  type: string
+  damage_class: string
+  power: number | null
+  accuracy: number | null
+  pp: number | null
+}
+
+export interface MovesData {
+  moves: Move[]
+}
+
+export interface MoveDetail {
+  id: number
+  name_fr: string | null
+  name_en: string
+  type: string
+  damage_class: string
+  power: number | null
+  accuracy: number | null
+  pp: number | null
+  effect_fr: string | null
+  effect_en: string | null
+}
+
 // Texte Pokédex non stocké en DB — récupéré directement depuis PokéAPI
 export async function fetchFlavorText(id: number): Promise<string> {
   const res = await fetch(`${POKEAPI}/pokemon-species/${id}`)
@@ -165,5 +196,17 @@ export async function fetchEvolutionChain(
 export async function fetchEncounters(id: number): Promise<EncountersData> {
   const res = await fetch(`${API_BASE}/pokemon/${id}/encounters`)
   if (!res.ok) return { encounters: [], has_encounters: false }
+  return res.json()
+}
+
+export async function fetchMoves(id: number): Promise<MovesData> {
+  const res = await fetch(`${API_BASE}/pokemon/${id}/moves`)
+  if (!res.ok) return { moves: [] }
+  return res.json()
+}
+
+export async function fetchMoveDetail(id: number): Promise<MoveDetail | null> {
+  const res = await fetch(`${API_BASE}/move/${id}`)
+  if (!res.ok) return null
   return res.json()
 }

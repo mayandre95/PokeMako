@@ -6,6 +6,7 @@ from database import get_db
 from limiter import limiter
 from models import Pokemon
 from schemas.pokemon import PokemonResponse
+from routers.moves import _move_detail
 from sqlalchemy.orm import Session, joinedload
 import httpx
 
@@ -60,6 +61,82 @@ def _area_name_fr(client: httpx.Client, slug: str) -> str | None:
     )
     set_cache(cache_key, {"name": fr}, ttl=60 * 60 * 24 * 30)
     return fr
+
+
+@router.get(
+    "/{pokemon_id}/moves",
+    responses={
+        404: {"description": "Pokémon introuvable"},
+        429: {"description": "Trop de requêtes — réessayez dans 60s"},
+    },
+)
+@limiter.limit(RATE_LIMIT)
+def get_moves(request: Request, pokemon_id: int):
+    cache_key = f"moves:{pokemon_id}"
+    if cached := get_cached(cache_key):
+        return cached
+
+    with httpx.Client(timeout=10.0) as client:
+        resp = client.get(f"{POKEAPI}/pokemon/{pokemon_id}")
+        if resp.status_code == 404:
+            raise HTTPException(status_code=404, detail="Pokémon introuvable")
+        resp.raise_for_status()
+
+        # Une entrée par (move_id, method, version_group)
+        move_entries: dict[tuple[int, str, str], dict] = {}
+        for mv in resp.json()["moves"]:
+            move_id = int(mv["move"]["url"].rstrip("/").split("/")[-1])
+            for vd in mv["version_group_details"]:
+                method = vd["move_learn_method"]["name"]
+                level = vd["level_learned_at"]
+                vg = vd["version_group"]["name"]
+                key = (move_id, method, vg)
+                if key not in move_entries:
+                    move_entries[key] = {
+                        "id": move_id,
+                        "method": method,
+                        "level_learned": level,
+                        "version_group": vg,
+                    }
+                elif method == "level-up":
+                    # Même move, même version_group, même méthode → garder le niveau minimal
+                    move_entries[key]["level_learned"] = min(
+                        move_entries[key]["level_learned"], level
+                    )
+
+        unique_ids = {mid for (mid, _, _) in move_entries}
+        detail_map = {mid: _move_detail(client, mid) for mid in unique_ids}
+
+    METHOD_ORDER = ["level-up", "machine", "egg", "tutor"]
+    moves = []
+    for (move_id, method, vg), entry in move_entries.items():
+        detail = detail_map.get(move_id)
+        if not detail:
+            continue
+        moves.append(
+            {
+                **entry,
+                "name_fr": detail["name_fr"],
+                "name_en": detail["name_en"],
+                "type": detail["type"],
+                "damage_class": detail["damage_class"],
+                "power": detail["power"],
+                "accuracy": detail["accuracy"],
+                "pp": detail["pp"],
+            }
+        )
+
+    moves.sort(
+        key=lambda m: (
+            METHOD_ORDER.index(m["method"]) if m["method"] in METHOD_ORDER else 99,
+            m["level_learned"],
+            m["name_fr"] or m["name_en"],
+        )
+    )
+
+    result = {"moves": moves}
+    set_cache(cache_key, result)
+    return result
 
 
 @router.get(
