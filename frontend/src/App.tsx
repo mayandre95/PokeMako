@@ -1,5 +1,6 @@
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 import { PokemonPage } from './pages/PokemonPage'
+import { MovePage } from './pages/MovePage'
 
 function HomePage() {
   const samples = [1, 4, 7, 25, 133, 150]
@@ -28,6 +29,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/pokemon/:id" element={<PokemonPage />} />
+        <Route path="/move/:id" element={<MovePage />} />
       </Routes>
     </BrowserRouter>
   )

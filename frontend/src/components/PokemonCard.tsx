@@ -1,9 +1,10 @@
 import { Pokemon } from '../api/pokemon'
 import { TypeBadge } from './TypeBadge'
 import { StatBar } from './StatBar'
-import type { EncountersData, EvolutionNode } from '../api/pokemon'
+import type { EncountersData, EvolutionNode, MovesData } from '../api/pokemon'
 import { EvolutionTree } from './EvolutionTree'
 import { LocationTable } from './LocationTable'
+import { MovesTable } from './MovesTable'
 
 const STATS: { label: string; key: keyof Pokemon }[] = [
   { label: 'HP', key: 'hp' },
@@ -19,6 +20,7 @@ interface Props {
   flavorText: string
   evolutionTree: EvolutionNode | null
   encountersData: EncountersData | null
+  movesData: MovesData | null
 }
 
 export function PokemonCard({
@@ -26,6 +28,7 @@ export function PokemonCard({
   flavorText,
   evolutionTree,
   encountersData,
+  movesData,
 }: Props) {
   const displayName = pokemon.name_fr ?? pokemon.name_en
   const numStr = String(pokemon.id).padStart(4, '0')
@@ -110,6 +113,13 @@ export function PokemonCard({
             Où trouver ce Pokémon ?
           </h2>
           <LocationTable encounters={encountersData.encounters} />
+        </section>
+      )}
+
+      {movesData && movesData.moves.length > 0 && (
+        <section aria-label="Attaques" className="mt-6">
+          <h2 className="font-semibold text-gray-700 mb-3">Attaques</h2>
+          <MovesTable moves={movesData.moves} />
         </section>
       )}
 

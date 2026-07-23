@@ -4,9 +4,11 @@ import {
   fetchEncounters,
   fetchEvolutionChain,
   fetchFlavorText,
+  fetchMoves,
   fetchPokemon,
   type EncountersData,
   type EvolutionNode,
+  type MovesData,
   type Pokemon,
 } from '../api/pokemon'
 import { PokemonCard } from '../components/PokemonCard'
@@ -19,6 +21,7 @@ export function PokemonPage() {
   )
   const [flavorText, setFlavorText] = useState('')
   const [evolutionTree, setEvolutionTree] = useState<EvolutionNode | null>(null)
+  const [movesData, setMovesData] = useState<MovesData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -32,12 +35,14 @@ export function PokemonPage() {
       fetchFlavorText(Number(id)),
       fetchEvolutionChain(Number(id)),
       fetchEncounters(Number(id)),
+      fetchMoves(Number(id)),
     ])
-      .then(([poke, flavor, evoChain, encounters]) => {
+      .then(([poke, flavor, evoChain, encounters, moves]) => {
         setPokemon(poke)
         setFlavorText(flavor)
         setEvolutionTree(evoChain)
         setEncountersData(encounters)
+        setMovesData(moves)
       })
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false))
@@ -74,6 +79,7 @@ export function PokemonPage() {
         flavorText={flavorText}
         evolutionTree={evolutionTree}
         encountersData={encountersData}
+        movesData={movesData}
       />
     </div>
   )
