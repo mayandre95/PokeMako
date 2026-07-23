@@ -14,6 +14,7 @@ router = APIRouter(prefix="/pokemon", tags=["Pokémon"])
 
 RATE_LIMIT = "30/minute"
 POKEAPI = "https://pokeapi.co/api/v2"
+NOT_FOUND_DETAIL = "Pokémon introuvable"
 
 
 @router.get(
@@ -37,7 +38,7 @@ def get_pokemon(
         .first()
     )
     if not pokemon:
-        raise HTTPException(status_code=404, detail="Pokémon introuvable")
+        raise HTTPException(status_code=404, detail=NOT_FOUND_DETAIL)
 
     response = PokemonResponse.model_validate(pokemon).model_dump()
     set_cache(cache_key, response)
@@ -79,7 +80,7 @@ def get_moves(request: Request, pokemon_id: int):
     with httpx.Client(timeout=10.0) as client:
         resp = client.get(f"{POKEAPI}/pokemon/{pokemon_id}")
         if resp.status_code == 404:
-            raise HTTPException(status_code=404, detail="Pokémon introuvable")
+            raise HTTPException(status_code=404, detail=NOT_FOUND_DETAIL)
         resp.raise_for_status()
 
         # Une entrée par (move_id, method, version_group)
@@ -155,7 +156,7 @@ def get_encounters(request: Request, pokemon_id: int):
     with httpx.Client(timeout=10.0) as client:
         resp = client.get(f"{POKEAPI}/pokemon/{pokemon_id}/encounters")
         if resp.status_code == 404:
-            raise HTTPException(status_code=404, detail="Pokémon introuvable")
+            raise HTTPException(status_code=404, detail=NOT_FOUND_DETAIL)
         resp.raise_for_status()
 
         encounters = []
