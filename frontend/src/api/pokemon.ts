@@ -95,6 +95,27 @@ export interface MoveDetail {
   effect_en: string | null
 }
 
+export interface ScoresData {
+  pokemon_id: number
+  power_score: number
+  offensive_score: number
+  tank_score: number
+  meta_score: number
+  generation_used: number
+}
+
+export async function fetchScores(
+  id: number,
+  generation?: number
+): Promise<ScoresData> {
+  const url = generation
+    ? `${API_BASE}/pokemon/${id}/scores?generation=${generation}`
+    : `${API_BASE}/pokemon/${id}/scores`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error(`scores ${id}: ${res.status}`)
+  return res.json()
+}
+
 // Texte Pokédex non stocké en DB — récupéré directement depuis PokéAPI
 export async function fetchFlavorText(id: number): Promise<string> {
   const res = await fetch(`${POKEAPI}/pokemon-species/${id}`)

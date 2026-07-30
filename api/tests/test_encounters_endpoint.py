@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 
+import httpx
 from fastapi.testclient import TestClient
-
 from main import app
 from routers.pokemon import _area_name_fr
 
@@ -187,3 +187,29 @@ def test_get_encounters_not_found():
         resp = client.get("/pokemon/99999/encounters")
 
     assert resp.status_code == 404
+
+
+def test_area_name_fr_read_timeout():
+    """ReadTimeout lors de l'appel PokéAPI → retourne None sans mettre en cache."""
+    mock_client = MagicMock()
+    mock_client.get.side_effect = httpx.ReadTimeout("timeout")
+    with (
+        patch("routers.pokemon.get_cached", return_value=None),
+        patch("routers.pokemon.set_cache") as mock_set,
+    ):
+        result = _area_name_fr(mock_client, "some-area")
+    assert result is None
+    mock_set.assert_not_called()
+
+
+def test_area_name_fr_connect_timeout():
+    """ConnectTimeout lors de l'appel PokéAPI → retourne None sans mettre en cache."""
+    mock_client = MagicMock()
+    mock_client.get.side_effect = httpx.ConnectTimeout("timeout")
+    with (
+        patch("routers.pokemon.get_cached", return_value=None),
+        patch("routers.pokemon.set_cache") as mock_set,
+    ):
+        result = _area_name_fr(mock_client, "some-area")
+    assert result is None
+    mock_set.assert_not_called()

@@ -1,9 +1,9 @@
-import pytest
-from fastapi.testclient import TestClient
-from slowapi.errors import RateLimitExceeded
 from unittest.mock import MagicMock, patch
 
+import pytest
+from fastapi.testclient import TestClient
 from main import app
+from slowapi.errors import RateLimitExceeded
 
 
 @pytest.fixture

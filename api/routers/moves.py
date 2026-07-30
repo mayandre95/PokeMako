@@ -1,8 +1,6 @@
-from fastapi import APIRouter, HTTPException, Request
-
 import httpx
-
 from cache.redis import get_cached, set_cache
+from fastapi import APIRouter, HTTPException, Request
 from limiter import limiter
 
 router = APIRouter(prefix="/move", tags=["Attaques"])

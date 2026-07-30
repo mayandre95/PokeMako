@@ -1,8 +1,7 @@
 from unittest.mock import MagicMock
 
-from fastapi.testclient import TestClient
-
 from database import get_db
+from fastapi.testclient import TestClient
 from main import app
 from security import verify_api_key
 

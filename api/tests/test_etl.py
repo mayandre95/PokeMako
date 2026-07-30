@@ -127,7 +127,7 @@ def test_fetch_json_raises_after_max_retries():
     with patch("fetch_pokemon.time.sleep"):
         try:
             fetch_pokemon.fetch_json(client, "http://example.com")
-            assert False, "Aurait dû lever une exception"
+            raise AssertionError("Aurait dû lever une exception")
         except httpx.RequestError:
             pass
 
@@ -186,6 +186,37 @@ def test_main_skips_when_db_full():
         fetch_pokemon.main()
 
     mock_run.assert_not_called()
+
+
+def test_process_pokemon_scores_immunity_branch():
+    """Line 181: immunities += 1 — branche mult == 0.0 dans process_pokemon."""
+    client = MagicMock(spec=httpx.Client)
+    db = MagicMock()
+
+    t = MagicMock()
+    t.id = 1
+    db.query.return_value.all.return_value = [t]
+
+    pokemon_obj = MagicMock()
+    pokemon_obj.generation = 1
+    pt = MagicMock()
+    pt.type_id = 10
+    pokemon_obj.types = [pt]
+    db.query.return_value.filter_by.return_value.first.return_value = pokemon_obj
+
+    with (
+        patch(
+            "fetch_pokemon.fetch_json", side_effect=[POKEMON_FIXTURE, SPECIES_FIXTURE]
+        ),
+        patch("fetch_pokemon.time.sleep"),
+        patch("fetch_pokemon._upsert_type", return_value=1),
+        patch("fetch_pokemon._upsert_ability"),
+        patch("fetch_pokemon._upsert_move"),
+        patch("scoring._load_type_chart", return_value={(1, 10): 0.0}),
+    ):
+        fetch_pokemon.process_pokemon(client, db, 1)
+
+    db.commit.assert_called_once()
 
 
 def test_main_runs_etl_when_db_empty():

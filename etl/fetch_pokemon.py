@@ -17,8 +17,15 @@ from models import (
     Pokemon,
     PokemonAbility,
     PokemonMove,
+    PokemonScore,
     PokemonType,
     Type,
+)
+from scoring import (
+    compute_meta_score,
+    compute_offensive_score,
+    compute_power_score,
+    compute_tank_score,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -77,6 +84,46 @@ def _upsert_move(db, move_id: int, name: str) -> None:
         pg_insert(Move)
         .values(id=move_id, name=name)
         .on_conflict_do_update(index_elements=["id"], set_={"name": name})
+    )
+
+
+def _add_moves(db, pokemon_id: int, moves_data: list) -> None:
+    seen_moves: set[int] = set()
+    for mv in moves_data:
+        move_id = int(mv["move"]["url"].rstrip("/").split("/")[-1])
+        if move_id in seen_moves:
+            continue
+        for vd in mv["version_group_details"]:
+            if vd["move_learn_method"]["name"] == "level-up":
+                _upsert_move(db, move_id, mv["move"]["name"])
+                db.add(
+                    PokemonMove(
+                        pokemon_id=pokemon_id,
+                        move_id=move_id,
+                        learn_method="level-up",
+                        level_learned=vd["level_learned_at"],
+                    )
+                )
+                seen_moves.add(move_id)
+                break
+
+
+def _upsert_pokemon_score(db, pokemon_obj) -> None:
+    gen = pokemon_obj.generation or 1
+    type_ids = [pt.type_id for pt in pokemon_obj.types]
+    power = compute_power_score(pokemon_obj)
+    meta = compute_meta_score(db, power, type_ids, gen)
+    vals = {
+        "pokemon_id": pokemon_obj.id,
+        "power_score": power,
+        "offensive_score": compute_offensive_score(pokemon_obj),
+        "tank_score": compute_tank_score(pokemon_obj),
+        "meta_score": meta,
+    }
+    db.execute(
+        pg_insert(PokemonScore)
+        .values(**vals)
+        .on_conflict_do_update(index_elements=["pokemon_id"], set_=vals)
     )
 
 
@@ -142,24 +189,12 @@ def process_pokemon(client: httpx.Client, db, pokemon_id: int) -> None:
             )
         )
 
-    seen_moves: set[int] = set()
-    for mv in data["moves"]:
-        move_id = int(mv["move"]["url"].rstrip("/").split("/")[-1])
-        if move_id in seen_moves:
-            continue
-        for vd in mv["version_group_details"]:
-            if vd["move_learn_method"]["name"] == "level-up":
-                _upsert_move(db, move_id, mv["move"]["name"])
-                db.add(
-                    PokemonMove(
-                        pokemon_id=data["id"],
-                        move_id=move_id,
-                        learn_method="level-up",
-                        level_learned=vd["level_learned_at"],
-                    )
-                )
-                seen_moves.add(move_id)
-                break  # une seule entrée par move (premier groupe de version)
+    _add_moves(db, data["id"], data["moves"])
+
+    db.flush()
+    pokemon_obj = db.query(Pokemon).filter_by(id=data["id"]).first()
+    if pokemon_obj:
+        _upsert_pokemon_score(db, pokemon_obj)
 
     db.commit()
     log.info("[%4d/1025] %-20s / %-20s gen%d", data["id"], name_fr or "—", name_en, gen)
@@ -167,14 +202,13 @@ def process_pokemon(client: httpx.Client, db, pokemon_id: int) -> None:
 
 def run(start: int, end: int) -> None:
     log.info("ETL PokéMako — Pokémon %d → %d", start, end)
-    with SessionLocal() as db:
-        with httpx.Client() as client:
-            for pid in range(start, end + 1):
-                try:
-                    process_pokemon(client, db, pid)
-                except Exception as exc:
-                    log.error("Pokémon #%d échoué : %s", pid, exc)
-                    db.rollback()
+    with SessionLocal() as db, httpx.Client() as client:
+        for pid in range(start, end + 1):
+            try:
+                process_pokemon(client, db, pid)
+            except Exception as exc:
+                log.error("Pokémon #%d échoué : %s", pid, exc)
+                db.rollback()
 
 
 if __name__ == "__main__":
