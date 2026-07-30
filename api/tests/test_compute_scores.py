@@ -42,7 +42,8 @@ def test_run_executes_upsert_and_commits():
 
 def test_run_covers_all_multiplier_branches():
     """Lines 41/43/45: immunity/resistance/weakness branches in the scoring loop."""
-    from models import Pokemon, Type as TypeModel
+    from models import Pokemon
+    from models import Type as TypeModel
 
     poke = _make_pokemon()
     t1, t2, t3 = MagicMock(), MagicMock(), MagicMock()

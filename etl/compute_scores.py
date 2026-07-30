@@ -37,7 +37,7 @@ def run():
                 mult = 1.0
                 for defender_id in type_ids:
                     mult *= chart.get((attacker_id, defender_id), 1.0)
-                if mult == 0.0:
+                if not mult:
                     immunities += 1
                 elif mult < 1.0:
                     resistances += 1

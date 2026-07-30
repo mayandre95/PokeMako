@@ -2,7 +2,6 @@ from unittest.mock import MagicMock, patch
 
 import httpx
 from fastapi.testclient import TestClient
-
 from main import app
 from routers.pokemon import _area_name_fr
 

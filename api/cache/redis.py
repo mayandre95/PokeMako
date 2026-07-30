@@ -1,5 +1,6 @@
 import json
 import os
+
 import redis
 
 TTL = 60 * 60 * 24  # 24h

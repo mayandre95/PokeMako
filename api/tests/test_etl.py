@@ -127,7 +127,7 @@ def test_fetch_json_raises_after_max_retries():
     with patch("fetch_pokemon.time.sleep"):
         try:
             fetch_pokemon.fetch_json(client, "http://example.com")
-            assert False, "Aurait dû lever une exception"
+            raise AssertionError("Aurait dû lever une exception")
         except httpx.RequestError:
             pass
 
@@ -212,7 +212,7 @@ def test_process_pokemon_scores_immunity_branch():
         patch("fetch_pokemon._upsert_type", return_value=1),
         patch("fetch_pokemon._upsert_ability"),
         patch("fetch_pokemon._upsert_move"),
-        patch("fetch_pokemon._load_type_chart", return_value={(1, 10): 0.0}),
+        patch("scoring._load_type_chart", return_value={(1, 10): 0.0}),
     ):
         fetch_pokemon.process_pokemon(client, db, 1)
 

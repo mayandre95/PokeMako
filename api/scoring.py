@@ -1,7 +1,6 @@
+from models import Type, TypeEffectiveness
 from sqlalchemy import func
 from sqlalchemy.orm import Session
-
-from models import Type, TypeEffectiveness
 
 
 def _load_type_chart(db: Session, generation: int) -> dict[tuple[int, int], float]:
@@ -66,7 +65,7 @@ def compute_meta_score(
         mult = 1.0
         for defender_id in pokemon_type_ids:
             mult *= chart.get((attacker_id, defender_id), 1.0)
-        if mult == 0.0:
+        if not mult:
             immunities += 1
         elif mult < 1.0:
             resistances += 1

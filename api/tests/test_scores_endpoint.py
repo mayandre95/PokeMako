@@ -1,8 +1,7 @@
 from unittest.mock import MagicMock, patch
 
-from fastapi.testclient import TestClient
-
 from database import get_db
+from fastapi.testclient import TestClient
 from main import app
 from models import Pokemon, PokemonScore, Type
 
@@ -113,7 +112,7 @@ def test_get_scores_with_generation_param():
         with (
             patch("routers.scores.get_cached", return_value=None),
             patch("routers.scores.set_cache"),
-            patch("routers.scores._load_type_chart", return_value=fake_chart),
+            patch("scoring._load_type_chart", return_value=fake_chart),
         ):
             resp = client.get("/pokemon/1/scores?generation=5")
     finally:

@@ -1,7 +1,6 @@
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
-
 from main import app
 from routers.moves import _move_detail
 

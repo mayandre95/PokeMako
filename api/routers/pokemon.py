@@ -1,14 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import Annotated
 
+import httpx
 from cache.redis import get_cached, set_cache
 from database import get_db
+from fastapi import APIRouter, Depends, HTTPException, Request
 from limiter import limiter
 from models import Pokemon
 from schemas.pokemon import PokemonResponse
-from routers.moves import _move_detail
 from sqlalchemy.orm import Session, joinedload
-import httpx
+
+from routers.moves import _move_detail
 
 router = APIRouter(prefix="/pokemon", tags=["Pokémon"])
 
@@ -116,7 +117,7 @@ def get_moves(request: Request, pokemon_id: int):
 
     METHOD_ORDER = ["level-up", "machine", "egg", "tutor"]
     moves = []
-    for (move_id, method, vg), entry in move_entries.items():
+    for (move_id, _method, _vg), entry in move_entries.items():
         detail = detail_map.get(move_id)
         if not detail:
             continue

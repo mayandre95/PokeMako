@@ -1,16 +1,15 @@
+from database import get_db
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from limiter import limiter
+from models import Pokemon
+from routers.moves import router as moves_router
+from routers.pokemon import router as pokemon_router
+from routers.scores import router as scores_router
+from security import verify_api_key
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from sqlalchemy.orm import Session
-
-from database import get_db
-from limiter import limiter
-from models import Pokemon
-from routers.pokemon import router as pokemon_router
-from routers.moves import router as moves_router
-from routers.scores import router as scores_router
-from security import verify_api_key
 
 app = FastAPI(
     title="PokéMako API",

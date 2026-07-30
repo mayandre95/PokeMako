@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
 from typing import Annotated
 
 from cache.redis import get_cached, set_cache
 from database import get_db
+from fastapi import APIRouter, Depends, HTTPException, Request
 from limiter import limiter
-from models import Pokemon, PokemonScore, Type
-from scoring import _load_type_chart
+from models import Pokemon, PokemonScore
+from scoring import compute_meta_score
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/pokemon", tags=["Scores"])
@@ -42,21 +42,7 @@ def get_scores(
 
     if generation is not None:
         type_ids = [pt.type_id for pt in pokemon.types]
-        all_type_ids = [t.id for t in db.query(Type).all()]
-        chart = _load_type_chart(db, generation)
-        power = score.power_score
-        immunities = resistances = weaknesses = 0
-        for attacker_id in all_type_ids:
-            mult = 1.0
-            for defender_id in type_ids:
-                mult *= chart.get((attacker_id, defender_id), 1.0)
-            if mult == 0.0:
-                immunities += 1
-            elif mult < 1.0:
-                resistances += 1
-            elif mult > 1.0:
-                weaknesses += 1
-        meta = float(power + immunities * 10 + resistances * 5 - weaknesses * 10)
+        meta = compute_meta_score(db, score.power_score, type_ids, generation)
         generation_used = generation
     else:
         meta = score.meta_score

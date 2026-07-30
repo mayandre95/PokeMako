@@ -1,14 +1,12 @@
-from logging.config import fileConfig
 import os
-from dotenv import load_dotenv
-
-from sqlalchemy import engine_from_config
-from sqlalchemy import pool
+from logging.config import fileConfig
 
 from alembic import context
+from dotenv import load_dotenv
 
 # Importer tes modèles pour qu'Alembic les connaisse
 from models import Base
+from sqlalchemy import engine_from_config, pool
 
 # 1. Récupérer l'objet config d'Alembic EN PREMIER
 config = context.config

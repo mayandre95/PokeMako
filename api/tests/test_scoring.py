@@ -5,10 +5,10 @@ from unittest.mock import MagicMock, patch
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from scoring import (
+    _load_type_chart,
     compute_offensive_score,
     compute_power_score,
     compute_tank_score,
-    _load_type_chart,
 )
 
 
