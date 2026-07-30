@@ -52,7 +52,10 @@ def _area_name_fr(client: httpx.Client, slug: str) -> str | None:
     cache_key = f"area-fr:{slug}"
     if cached := get_cached(cache_key):
         return cached.get("name")
-    resp = client.get(f"{POKEAPI}/location-area/{slug}/", timeout=5.0)
+    try:
+        resp = client.get(f"{POKEAPI}/location-area/{slug}/", timeout=5.0)
+    except (httpx.ReadTimeout, httpx.ConnectTimeout):
+        return None
     if resp.status_code != 200:
         return None
     fr = next(

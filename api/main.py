@@ -9,6 +9,7 @@ from limiter import limiter
 from models import Pokemon
 from routers.pokemon import router as pokemon_router
 from routers.moves import router as moves_router
+from routers.scores import router as scores_router
 from security import verify_api_key
 
 app = FastAPI(
@@ -27,6 +28,7 @@ app.add_middleware(
 
 app.include_router(pokemon_router)
 app.include_router(moves_router)
+app.include_router(scores_router)
 
 
 @app.get("/health", tags=["Infra"])

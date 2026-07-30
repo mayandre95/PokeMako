@@ -5,10 +5,12 @@ import {
   fetchEvolutionChain,
   fetchFlavorText,
   fetchMoves,
+  fetchScores,
   fetchPokemon,
   type EncountersData,
   type EvolutionNode,
   type MovesData,
+  type ScoresData,
   type Pokemon,
 } from '../api/pokemon'
 import { PokemonCard } from '../components/PokemonCard'
@@ -22,6 +24,10 @@ export function PokemonPage() {
   const [flavorText, setFlavorText] = useState('')
   const [evolutionTree, setEvolutionTree] = useState<EvolutionNode | null>(null)
   const [movesData, setMovesData] = useState<MovesData | null>(null)
+  const [scoresData, setScoresData] = useState<ScoresData | null>(null)
+  const [selectedGeneration, setSelectedGeneration] = useState<number | null>(
+    null
+  )
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -29,6 +35,7 @@ export function PokemonPage() {
     if (!id) return
     setLoading(true)
     setError(null)
+    setSelectedGeneration(null)
 
     Promise.all([
       fetchPokemon(id),
@@ -36,17 +43,27 @@ export function PokemonPage() {
       fetchEvolutionChain(Number(id)),
       fetchEncounters(Number(id)),
       fetchMoves(Number(id)),
+      fetchScores(Number(id)),
     ])
-      .then(([poke, flavor, evoChain, encounters, moves]) => {
+      .then(([poke, flavor, evoChain, encounters, moves, scores]) => {
         setPokemon(poke)
         setFlavorText(flavor)
         setEvolutionTree(evoChain)
         setEncountersData(encounters)
         setMovesData(moves)
+        setScoresData(scores)
       })
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false))
   }, [id])
+
+  const handleGenerationChange = (gen: number | null) => {
+    if (!id) return
+    setSelectedGeneration(gen)
+    fetchScores(Number(id), gen ?? undefined)
+      .then(setScoresData)
+      .catch(() => {})
+  }
 
   if (loading)
     return (
@@ -80,6 +97,9 @@ export function PokemonPage() {
         evolutionTree={evolutionTree}
         encountersData={encountersData}
         movesData={movesData}
+        scoresData={scoresData}
+        selectedGeneration={selectedGeneration}
+        onGenerationChange={handleGenerationChange}
       />
     </div>
   )

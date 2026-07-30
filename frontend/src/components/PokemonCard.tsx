@@ -1,10 +1,16 @@
 import { Pokemon } from '../api/pokemon'
 import { TypeBadge } from './TypeBadge'
 import { StatBar } from './StatBar'
-import type { EncountersData, EvolutionNode, MovesData } from '../api/pokemon'
+import type {
+  EncountersData,
+  EvolutionNode,
+  MovesData,
+  ScoresData,
+} from '../api/pokemon'
 import { EvolutionTree } from './EvolutionTree'
 import { LocationTable } from './LocationTable'
 import { MovesTable } from './MovesTable'
+import { ScoreBar } from './ScoreBar'
 
 const STATS: { label: string; key: keyof Pokemon }[] = [
   { label: 'HP', key: 'hp' },
@@ -15,12 +21,17 @@ const STATS: { label: string; key: keyof Pokemon }[] = [
   { label: 'Vitesse', key: 'speed' },
 ]
 
+const GENS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
 interface Props {
   pokemon: Pokemon
   flavorText: string
   evolutionTree: EvolutionNode | null
   encountersData: EncountersData | null
   movesData: MovesData | null
+  scoresData: ScoresData | null
+  selectedGeneration: number | null
+  onGenerationChange: (gen: number | null) => void
 }
 
 export function PokemonCard({
@@ -29,6 +40,9 @@ export function PokemonCard({
   evolutionTree,
   encountersData,
   movesData,
+  scoresData,
+  selectedGeneration,
+  onGenerationChange,
 }: Props) {
   const displayName = pokemon.name_fr ?? pokemon.name_en
   const numStr = String(pokemon.id).padStart(4, '0')
@@ -120,6 +134,72 @@ export function PokemonCard({
         <section aria-label="Attaques" className="mt-6">
           <h2 className="font-semibold text-gray-700 mb-3">Attaques</h2>
           <MovesTable moves={movesData.moves} />
+        </section>
+      )}
+
+      {scoresData && (
+        <section aria-label="Scores analytiques" className="mt-6">
+          <h2 className="font-semibold text-gray-700 mb-3">
+            Scores analytiques
+          </h2>
+          <div className="flex flex-wrap gap-1 mb-3">
+            <button
+              onClick={() => onGenerationChange(null)}
+              className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                selectedGeneration === null
+                  ? 'bg-gray-700 text-white'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+              }`}
+            >
+              Natif (Gen {pokemon.generation})
+            </button>
+            {GENS.map((g) => (
+              <button
+                key={g}
+                onClick={() => onGenerationChange(g)}
+                className={`px-2 py-0.5 rounded text-xs font-medium transition-colors ${
+                  selectedGeneration === g
+                    ? 'bg-indigo-500 text-white'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                }`}
+              >
+                Gen {g}
+              </button>
+            ))}
+          </div>
+          <div className="space-y-3">
+            <ScoreBar
+              label="Score total (BST)"
+              value={scoresData.power_score}
+              max={800}
+              color="#6366f1"
+              tooltip="Somme des 6 statistiques de base : PV + Attaque + Défense + Att. Spé + Déf. Spé + Vitesse"
+            />
+            <ScoreBar
+              label="Score offensif"
+              value={scoresData.offensive_score}
+              max={450}
+              color="#ef4444"
+              tooltip="Capacité à attaquer vite et fort : Attaque + Att. Spé + Vitesse"
+            />
+            <ScoreBar
+              label="Score défensif"
+              value={scoresData.tank_score}
+              max={450}
+              color="#22c55e"
+              tooltip="Résistance aux dégâts : PV + Défense + Déf. Spé"
+            />
+            <ScoreBar
+              label="Score méta"
+              value={scoresData.meta_score}
+              max={900}
+              color="#f59e0b"
+              tooltip="Score total ajusté selon les résistances et faiblesses de type : +10 par immunité, +5 par résistance, −10 par faiblesse"
+            />
+          </div>
+          <p className="mt-2 text-xs text-gray-400 italic">
+            Score méta calculé avec le méta Gen {scoresData.generation_used}
+          </p>
         </section>
       )}
 

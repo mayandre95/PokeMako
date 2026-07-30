@@ -18,7 +18,15 @@ from models import (
     PokemonAbility,
     PokemonMove,
     PokemonType,
+    PokemonScore,
     Type,
+)
+
+from scoring import (
+    _load_type_chart,
+    compute_offensive_score,
+    compute_power_score,
+    compute_tank_score,
 )
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -160,6 +168,39 @@ def process_pokemon(client: httpx.Client, db, pokemon_id: int) -> None:
                 )
                 seen_moves.add(move_id)
                 break  # une seule entrée par move (premier groupe de version)
+
+    db.flush()
+    pokemon_obj = db.query(Pokemon).filter_by(id=data["id"]).first()
+    if pokemon_obj:
+        gen = pokemon_obj.generation or 1
+        chart = _load_type_chart(db, gen)
+        all_type_ids = [t.id for t in db.query(Type).all()]
+        type_ids = [pt.type_id for pt in pokemon_obj.types]
+        power = compute_power_score(pokemon_obj)
+        immunities = resistances = weaknesses = 0
+        for attacker_id in all_type_ids:
+            mult = 1.0
+            for defender_id in type_ids:
+                mult *= chart.get((attacker_id, defender_id), 1.0)
+            if mult == 0.0:
+                immunities += 1
+            elif mult < 1.0:
+                resistances += 1
+            elif mult > 1.0:
+                weaknesses += 1
+        meta = float(power + immunities * 10 + resistances * 5 - weaknesses * 10)
+        vals = {
+            "pokemon_id": pokemon_obj.id,
+            "power_score": power,
+            "offensive_score": compute_offensive_score(pokemon_obj),
+            "tank_score": compute_tank_score(pokemon_obj),
+            "meta_score": meta,
+        }
+        db.execute(
+            pg_insert(PokemonScore)
+            .values(**vals)
+            .on_conflict_do_update(index_elements=["pokemon_id"], set_=vals)
+        )
 
     db.commit()
     log.info("[%4d/1025] %-20s / %-20s gen%d", data["id"], name_fr or "—", name_en, gen)
