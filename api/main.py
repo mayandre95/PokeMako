@@ -3,6 +3,7 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from limiter import limiter
 from models import Pokemon
+from routers.analytics import router as analytics_router
 from routers.moves import router as moves_router
 from routers.pokemon import router as pokemon_router
 from routers.scores import router as scores_router
@@ -28,6 +29,7 @@ app.add_middleware(
 app.include_router(pokemon_router)
 app.include_router(moves_router)
 app.include_router(scores_router)
+app.include_router(analytics_router)
 
 
 @app.get("/health", tags=["Infra"])
