@@ -1,5 +1,6 @@
 import json
 import os
+from typing import Any
 
 import redis
 
@@ -18,10 +19,10 @@ def get_redis() -> redis.Redis:
     return _client
 
 
-def get_cached(key: str) -> dict | None:
+def get_cached(key: str) -> Any:
     data = get_redis().get(key)
     return json.loads(data) if data else None
 
 
-def set_cache(key: str, value: dict, ttl: int = TTL) -> None:
+def set_cache(key: str, value: Any, ttl: int = TTL) -> None:
     get_redis().setex(key, ttl, json.dumps(value))

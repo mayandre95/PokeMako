@@ -1,6 +1,8 @@
 import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 import { PokemonPage } from './pages/PokemonPage'
 import { MovePage } from './pages/MovePage'
+import { lazy, Suspense } from 'react'
+const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 
 function HomePage() {
   const samples = [1, 4, 7, 25, 133, 150]
@@ -19,6 +21,12 @@ function HomePage() {
           </Link>
         ))}
       </div>
+      <Link
+        to="/dashboard"
+        className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+      >
+        Dashboard
+      </Link>
     </div>
   )
 }
@@ -30,6 +38,16 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/pokemon/:id" element={<PokemonPage />} />
         <Route path="/move/:id" element={<MovePage />} />
+        <Route
+          path="/dashboard"
+          element={
+            <Suspense
+              fallback={<div className="p-8 text-center">Chargement…</div>}
+            >
+              <DashboardPage />
+            </Suspense>
+          }
+        />
       </Routes>
     </BrowserRouter>
   )

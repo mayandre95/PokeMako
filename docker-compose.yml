@@ -43,15 +43,14 @@ services:
     build:
       context: .
       dockerfile: ./api/Dockerfile
-    command: >
-      sh -c "python /workspace/etl/fetch_pokemon.py || true"
+    command: python /workspace/etl/fetch_pokemon.py
     env_file: .env
     volumes:
       - .:/workspace
     depends_on:
       db:
         condition: service_healthy
-    restart: "no"
+    restart: "on-failure"
 
   frontend:
     build:
