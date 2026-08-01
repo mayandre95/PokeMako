@@ -6,11 +6,38 @@ import type {
   EvolutionNode,
   MovesData,
   ScoresData,
+  ScoreHistoryPoint,
 } from '../api/pokemon'
 import { EvolutionTree } from './EvolutionTree'
 import { LocationTable } from './LocationTable'
 import { MovesTable } from './MovesTable'
 import { ScoreBar } from './ScoreBar'
+import Plot from 'react-plotly.js'
+
+function groupHistory(history: ScoreHistoryPoint[]) {
+  const active = history.filter((p) => p.active)
+  if (active.length === 0) return []
+  const groups: { label: string; meta_score: number }[] = []
+  let start = active[0].generation
+  let score = active[0].meta_score
+  for (let i = 1; i < active.length; i++) {
+    if (active[i].meta_score !== score) {
+      const end = active[i - 1].generation
+      groups.push({
+        label: start === end ? `Gen ${start}` : `Gen ${start} à ${end}`,
+        meta_score: score,
+      })
+      start = active[i].generation
+      score = active[i].meta_score
+    }
+  }
+  const last = active[active.length - 1].generation
+  groups.push({
+    label: start === last ? `Gen ${start}` : `Gen ${start} à ${last}`,
+    meta_score: score,
+  })
+  return groups
+}
 
 const STATS: { label: string; key: keyof Pokemon }[] = [
   { label: 'HP', key: 'hp' },
@@ -32,6 +59,7 @@ interface Props {
   scoresData: ScoresData | null
   selectedGeneration: number | null
   onGenerationChange: (gen: number | null) => void
+  scoreHistory: ScoreHistoryPoint[]
 }
 
 export function PokemonCard({
@@ -42,6 +70,7 @@ export function PokemonCard({
   movesData,
   scoresData,
   selectedGeneration,
+  scoreHistory,
   onGenerationChange,
 }: Props) {
   const displayName = pokemon.name_fr ?? pokemon.name_en
@@ -196,6 +225,39 @@ export function PokemonCard({
               color="#f59e0b"
               tooltip="Score total ajusté selon les résistances et faiblesses de type : +10 par immunité, +5 par résistance, −10 par faiblesse"
             />
+            {scoreHistory.length > 0 &&
+              (() => {
+                const groups = groupHistory(scoreHistory)
+                return (
+                  groups.length > 0 && (
+                    <div className="mt-4">
+                      <Plot
+                        data={[
+                          {
+                            type: 'bar',
+                            x: groups.map((g) => g.label),
+                            y: groups.map((g) => g.meta_score),
+                            width: groups.map(() => 0.15),
+                            marker: { color: '#f59e0b' },
+                            hovertemplate:
+                              '<b>%{x}</b><br>Score méta : %{y}<extra></extra>',
+                          },
+                        ]}
+                        layout={{
+                          autosize: true,
+                          height: 220,
+                          margin: { t: 10, b: 40, l: 50, r: 10 },
+                          xaxis: { fixedrange: true },
+                          yaxis: { title: 'Score méta', fixedrange: true },
+                        }}
+                        config={{ displayModeBar: false }}
+                        useResizeHandler
+                        style={{ width: '100%' }}
+                      />
+                    </div>
+                  )
+                )
+              })()}
           </div>
           <p className="mt-2 text-xs text-gray-400 italic">
             Score méta calculé avec le méta Gen {scoresData.generation_used}

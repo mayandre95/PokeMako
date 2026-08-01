@@ -104,6 +104,20 @@ export interface ScoresData {
   generation_used: number
 }
 
+export interface ScoreHistoryPoint {
+  generation: number
+  meta_score: number
+  active: boolean
+}
+
+export async function fetchScoreHistory(
+  id: number
+): Promise<ScoreHistoryPoint[]> {
+  const res = await fetch(`${API_BASE}/pokemon/${id}/scores/history`)
+  if (!res.ok) throw new Error(`scores history ${id}: ${res.status}`)
+  return res.json()
+}
+
 export async function fetchScores(
   id: number,
   generation?: number

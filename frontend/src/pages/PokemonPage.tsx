@@ -7,11 +7,13 @@ import {
   fetchMoves,
   fetchScores,
   fetchPokemon,
+  fetchScoreHistory,
   type EncountersData,
   type EvolutionNode,
   type MovesData,
   type ScoresData,
   type Pokemon,
+  type ScoreHistoryPoint,
 } from '../api/pokemon'
 import { PokemonCard } from '../components/PokemonCard'
 
@@ -28,6 +30,7 @@ export function PokemonPage() {
   const [selectedGeneration, setSelectedGeneration] = useState<number | null>(
     null
   )
+  const [scoreHistory, setScoreHistory] = useState<ScoreHistoryPoint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -44,14 +47,16 @@ export function PokemonPage() {
       fetchEncounters(Number(id)),
       fetchMoves(Number(id)),
       fetchScores(Number(id)),
+      fetchScoreHistory(Number(id)),
     ])
-      .then(([poke, flavor, evoChain, encounters, moves, scores]) => {
+      .then(([poke, flavor, evoChain, encounters, moves, scores, history]) => {
         setPokemon(poke)
         setFlavorText(flavor)
         setEvolutionTree(evoChain)
         setEncountersData(encounters)
         setMovesData(moves)
         setScoresData(scores)
+        setScoreHistory(history)
       })
       .catch((err) => setError((err as Error).message))
       .finally(() => setLoading(false))
@@ -99,6 +104,7 @@ export function PokemonPage() {
         movesData={movesData}
         scoresData={scoresData}
         selectedGeneration={selectedGeneration}
+        scoreHistory={scoreHistory}
         onGenerationChange={handleGenerationChange}
       />
     </div>
