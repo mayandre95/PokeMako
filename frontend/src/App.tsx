@@ -2,7 +2,9 @@ import { BrowserRouter, Link, Route, Routes } from 'react-router-dom'
 import { PokemonPage } from './pages/PokemonPage'
 import { MovePage } from './pages/MovePage'
 import { lazy, Suspense } from 'react'
+
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
+const ComparePage = lazy(() => import('./pages/ComparePage'))
 
 function HomePage() {
   const samples = [1, 4, 7, 25, 133, 150]
@@ -27,6 +29,12 @@ function HomePage() {
       >
         Dashboard
       </Link>
+      <Link
+        to="/compare"
+        className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+      >
+        Comparateur
+      </Link>
     </div>
   )
 }
@@ -45,6 +53,16 @@ export default function App() {
               fallback={<div className="p-8 text-center">Chargement…</div>}
             >
               <DashboardPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/compare"
+          element={
+            <Suspense
+              fallback={<div className="p-8 text-center">Chargement…</div>}
+            >
+              <ComparePage />
             </Suspense>
           }
         />
