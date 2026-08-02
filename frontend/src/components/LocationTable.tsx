@@ -178,9 +178,9 @@ export function LocationTable({ encounters }: Props) {
       )}
 
       <p className="mt-3 text-xs text-gray-400 italic">
-        Seules les rencontres sauvages sont affichées. Dans les jeux absents de
-        cette liste, ce Pokémon s'obtient autrement (Starter, cadeau PNJ,
-        échange, etc.).
+        Seules les rencontres sauvages, les starters et les cadeaux liés au
+        scénario principal sont affichées. Dans les jeux absents de cette liste,
+        ce Pokémon s'obtient autrement (cadeau PNJ, échange, etc.).
       </p>
     </div>
   )

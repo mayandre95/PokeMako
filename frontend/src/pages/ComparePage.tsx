@@ -1,30 +1,14 @@
-import { useEffect, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useSearchParams, Link } from 'react-router-dom'
 import Plot from 'react-plotly.js'
-import {
-  fetchCompare,
-  fetchSearch,
-  type CompareData,
-  type SearchResult,
-} from '../api/compare'
+import { fetchCompare, type CompareData } from '../api/compare'
 import { TypeBadge } from '../components/TypeBadge'
+import { PokemonSearchBar } from '../components/PokemonSearchBar'
+import { STAT_LABELS } from '../constants/statLabels'
+import { SCORE_LABELS } from '../constants/scoreLabels'
 
 // Couleurs par position : indigo, rouge, vert
 const COLORS = ['#6366f1', '#ef4444', '#22c55e']
-const RADAR_STATS = [
-  'HP',
-  'Attaque',
-  'Défense',
-  'Att.Spé',
-  'Déf.Spé',
-  'Vitesse',
-] as const
-const SCORE_ROWS = [
-  { label: 'Power (BST)', key: 'power_score' },
-  { label: 'Offensif', key: 'offensive_score' },
-  { label: 'Défensif', key: 'tank_score' },
-  { label: 'Méta', key: 'meta_score' },
-] as const
 
 export default function ComparePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -37,10 +21,6 @@ export default function ComparePage() {
     .slice(0, 3)
 
   const [pokemons, setPokemons] = useState<CompareData[]>([])
-  const [query, setQuery] = useState('')
-  const [suggestions, setSuggestions] = useState<SearchResult[]>([])
-  const [showSugg, setShowSugg] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
 
   // Chargement des données à chaque changement d'URL
   useEffect(() => {
@@ -51,24 +31,9 @@ export default function ComparePage() {
     fetchCompare(ids).then(setPokemons).catch(console.error)
   }, [ids.join(',')])
 
-  // Autocomplete avec debounce 300ms
-  useEffect(() => {
-    if (query.length < 2) {
-      setSuggestions([])
-      return
-    }
-    const timer = setTimeout(
-      () => fetchSearch(query).then(setSuggestions).catch(console.error),
-      300
-    )
-    return () => clearTimeout(timer)
-  }, [query])
-
   const addPokemon = (id: number) => {
     if (ids.includes(id) || ids.length >= 3) return
     setSearchParams({ p: [...ids, id].join(',') })
-    setQuery('')
-    setSuggestions([])
   }
 
   const removePokemon = (id: number) => {
@@ -76,61 +41,22 @@ export default function ComparePage() {
     next.length ? setSearchParams({ p: next.join(',') }) : setSearchParams({})
   }
 
-  // Données radar : on répète le premier point pour fermer le polygone
-  const statKeys = [
-    'hp',
-    'attack',
-    'defense',
-    'sp_attack',
-    'sp_defense',
-    'speed',
-  ] as const
-
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-8">
       <h1 className="text-2xl font-bold">Comparateur de Pokémon</h1>
-
-      {/* Barre de recherche autocomplete */}
-      <div className="relative">
-        <input
-          ref={inputRef}
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value)
-            setShowSugg(true)
-          }}
-          onFocus={() => setShowSugg(true)}
-          onBlur={() => setTimeout(() => setShowSugg(false), 150)}
-          placeholder={
-            ids.length >= 3 ? 'Maximum 3 Pokémon' : 'Rechercher un Pokémon…'
-          }
-          disabled={ids.length >= 3}
-          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 disabled:opacity-50"
-        />
-        {showSugg && suggestions.length > 0 && (
-          <ul className="absolute z-10 w-full bg-white border rounded-lg shadow-lg mt-1 max-h-60 overflow-y-auto">
-            {suggestions.map((s) => (
-              <li
-                key={s.id}
-                onMouseDown={() => addPokemon(s.id)}
-                className="flex items-center gap-2 px-3 py-2 hover:bg-gray-100 cursor-pointer"
-              >
-                {s.sprite_url && (
-                  <img
-                    src={s.sprite_url}
-                    alt=""
-                    width={32}
-                    height={32}
-                    style={{ imageRendering: 'pixelated' }}
-                  />
-                )}
-                <span className="font-medium">{s.name_fr ?? s.name_en}</span>
-                <span className="text-gray-400 text-xs">#{s.id}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+      <div className="mb-2">
+        <Link to="/" className="text-blue-500 hover:underline text-sm">
+          ← Retour
+        </Link>
       </div>
+      {/* Barre de recherche autocomplete */}
+      <PokemonSearchBar
+        onSelect={addPokemon}
+        placeholder={
+          ids.length >= 3 ? 'Maximum 3 Pokémon' : 'Rechercher un Pokémon…'
+        }
+        disabled={ids.length >= 3}
+      />
 
       {/* Pokémon sélectionnés (chips) */}
       {ids.length > 0 && (
@@ -161,8 +87,11 @@ export default function ComparePage() {
           <Plot
             data={pokemons.map((p, i) => ({
               type: 'scatterpolar' as const,
-              r: [...statKeys.map((k) => p[k] ?? 0), p[statKeys[0]] ?? 0],
-              theta: [...RADAR_STATS, RADAR_STATS[0]],
+              r: [
+                ...STAT_LABELS.map((s) => p[s.key] ?? 0),
+                p[STAT_LABELS[0].key] ?? 0,
+              ],
+              theta: [...STAT_LABELS.map((s) => s.label), STAT_LABELS[0].label],
               fill: 'toself' as const,
               name: p.name_fr ?? p.name_en,
               line: { color: COLORS[i] },
@@ -194,7 +123,7 @@ export default function ComparePage() {
           <h2 className="font-semibold text-gray-700 mb-3">
             Scores analytiques
           </h2>
-          <div className="overflow-x-auto">
+          <div>
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="border-b">
@@ -229,12 +158,23 @@ export default function ComparePage() {
                 </tr>
               </thead>
               <tbody>
-                {SCORE_ROWS.map(({ label, key }) => (
+                {SCORE_LABELS.map(({ labelShort, key, tooltip }) => (
                   <tr
                     key={key}
                     className="border-b last:border-0 hover:bg-gray-50"
                   >
-                    <td className="py-2 pr-4 text-gray-500">{label}</td>
+                    <td className="py-2 pr-4 text-gray-500">
+                      <span className="flex items-center gap-1">
+                        {labelShort}
+                        <span className="relative group cursor-default">
+                          <span className="text-gray-400 text-xs">ⓘ</span>
+                          <span className="absolute left-1/2 -translate-x-1/2 bottom-full mb-1.5 w-52 bg-gray-800 text-white text-xs rounded px-2 py-1.5 leading-snug opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
+                            {tooltip}
+                            <span className="absolute left-1/2 -translate-x-1/2 top-full border-4 border-transparent border-t-gray-800" />
+                          </span>
+                        </span>
+                      </span>
+                    </td>
                     {pokemons.map((p) => (
                       <td
                         key={p.id}
