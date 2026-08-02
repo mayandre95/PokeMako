@@ -1,7 +1,7 @@
 const STAT_MAX = 255
 
 const STAT_COLORS: Record<string, string> = {
-  HP: '#FF5959',
+  PV: '#FF5959',
   Attaque: '#F5AC78',
   Défense: '#FAE078',
   'Att. Spé': '#9DB7F5',

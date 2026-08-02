@@ -1,6 +1,8 @@
 import { Pokemon } from '../api/pokemon'
 import { TypeBadge } from './TypeBadge'
 import { StatBar } from './StatBar'
+import { STAT_LABELS } from '../constants/statLabels'
+import { SCORE_LABELS } from '../constants/scoreLabels'
 import type {
   EncountersData,
   EvolutionNode,
@@ -38,15 +40,6 @@ function groupHistory(history: ScoreHistoryPoint[]) {
   })
   return groups
 }
-
-const STATS: { label: string; key: keyof Pokemon }[] = [
-  { label: 'HP', key: 'hp' },
-  { label: 'Attaque', key: 'attack' },
-  { label: 'Défense', key: 'defense' },
-  { label: 'Att. Spé', key: 'sp_attack' },
-  { label: 'Déf. Spé', key: 'sp_defense' },
-  { label: 'Vitesse', key: 'speed' },
-]
 
 const GENS = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -131,7 +124,7 @@ export function PokemonCard({
           Statistiques de base
         </h2>
         <div className="space-y-2">
-          {STATS.map(({ label, key }) => (
+          {STAT_LABELS.map(({ label, key }) => (
             <StatBar
               key={key}
               label={label}
@@ -197,34 +190,16 @@ export function PokemonCard({
             ))}
           </div>
           <div className="space-y-3">
-            <ScoreBar
-              label="Score total (BST)"
-              value={scoresData.power_score}
-              max={800}
-              color="#6366f1"
-              tooltip="Somme des 6 statistiques de base : PV + Attaque + Défense + Att. Spé + Déf. Spé + Vitesse"
-            />
-            <ScoreBar
-              label="Score offensif"
-              value={scoresData.offensive_score}
-              max={450}
-              color="#ef4444"
-              tooltip="Capacité à attaquer vite et fort : Attaque + Att. Spé + Vitesse"
-            />
-            <ScoreBar
-              label="Score défensif"
-              value={scoresData.tank_score}
-              max={450}
-              color="#22c55e"
-              tooltip="Résistance aux dégâts : PV + Défense + Déf. Spé"
-            />
-            <ScoreBar
-              label="Score méta"
-              value={scoresData.meta_score}
-              max={900}
-              color="#f59e0b"
-              tooltip="Score total ajusté selon les résistances et faiblesses de type : +10 par immunité, +5 par résistance, −10 par faiblesse"
-            />
+            {SCORE_LABELS.map((score) => (
+              <ScoreBar
+                key={score.key}
+                label={score.label}
+                value={scoresData[score.key]}
+                max={score.max}
+                color={score.color}
+                tooltip={score.tooltip}
+              />
+            ))}
             {scoreHistory.length > 0 &&
               (() => {
                 const groups = groupHistory(scoreHistory)

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import Plot from 'react-plotly.js'
+import { Link } from 'react-router-dom'
 import {
   fetchTypeDistribution,
   fetchGenerationStats,
@@ -9,15 +10,7 @@ import {
   type ScatterPoint,
 } from '../api/analytics'
 import { TYPE_COLORS } from '../constants/typeColors'
-
-const STATS = [
-  'hp',
-  'attack',
-  'defense',
-  'sp_attack',
-  'sp_defense',
-  'speed',
-] as const
+import { STAT_LABELS } from '../constants/statLabels'
 
 export default function DashboardPage() {
   const [types, setTypes] = useState<TypeDistribution[]>([])
@@ -44,6 +37,11 @@ export default function DashboardPage() {
 
   return (
     <div className="max-w-5xl mx-auto p-6 space-y-10">
+      <div className="max-w-2xl mx-auto mb-4">
+        <Link to="/" className="text-blue-500 hover:underline text-sm">
+          ← Retour
+        </Link>
+      </div>
       <h1 className="text-2xl font-bold">Dashboard Pokédex</h1>
 
       {/* Graphique 1 — Répartition des types */}
@@ -78,13 +76,13 @@ export default function DashboardPage() {
           Stats moyennes par génération
         </h2>
         <Plot
-          data={STATS.map((stat) => ({
+          data={STAT_LABELS.map((stat) => ({
             type: 'scatter' as const,
             mode: 'lines+markers' as const,
-            name: stat,
+            name: stat.label,
             x: gens.map((g) => `Gen ${g.generation}`),
-            y: gens.map((g) => g[stat]),
-            hovertemplate: `${stat}: <b>%{y:.1f}</b><extra></extra>`,
+            y: gens.map((g) => g[stat.key]),
+            hovertemplate: `${stat.label}: <b>%{y:.1f}</b><extra></extra>`,
           }))}
           layout={{
             autosize: true,
@@ -98,9 +96,11 @@ export default function DashboardPage() {
         />
       </section>
 
-      {/* Graphique 3 — Scatter Speed vs Power Score */}
+      {/* Graphique 3 — Scatter Vitesse vs Score de puissance */}
       <section>
-        <h2 className="text-lg font-semibold mb-3">Speed vs Power Score</h2>
+        <h2 className="text-lg font-semibold mb-3">
+          Vitesse vs Score de puissance
+        </h2>
         <Plot
           data={[
             {
@@ -117,15 +117,16 @@ export default function DashboardPage() {
                 opacity: 0.7,
               },
               hovertemplate:
-                '<b>%{text}</b><br>Speed : %{x}<br>Power : %{y}<extra></extra>',
+                '<b>%{text}</b><br>Vitesse : %{x}<br>Score de puissance : %{y}<extra></extra>',
             },
           ]}
           layout={{
             autosize: true,
-            xaxis: { title: 'Speed' },
-            yaxis: { title: 'Power Score' },
-            margin: { t: 10, b: 40 },
+            xaxis: { title: { text: 'Vitesse' } },
+            yaxis: { title: { text: 'Score de puissance' } },
+            margin: { t: 20, b: 60, l: 120 },
           }}
+          config={{ displayModeBar: false }}
           useResizeHandler
           style={{ width: '100%', height: 450 }}
         />
