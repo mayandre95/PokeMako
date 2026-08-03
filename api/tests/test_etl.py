@@ -265,26 +265,30 @@ def test_run_continues_after_pokemon_error():
 # --- Test d'intégration (base de données réelle) ---
 
 
-def test_process_pokemon_inserts_bilingual_names():
-    """Intégration : vérifie l'insertion réelle en base avec noms bilingues."""
-    from database import SessionLocal
+def test_process_pokemon_inserts_bilingual_names(db_session):
+    """Intégration : vérifie l'insertion réelle en base avec noms bilingues.
+
+    Utilise un id hors plage réelle (999999) et la fixture `db_session`
+    (transaction toujours annulée) pour ne jamais toucher — même
+    temporairement — aux vraies données de la base de dev.
+    """
     from models import Pokemon
 
     client_mock = MagicMock(spec=httpx.Client)
+    fixture = {**POKEMON_FIXTURE, "id": 999999}
 
-    with SessionLocal() as db:
-        with (
-            patch(
-                "fetch_pokemon.fetch_json",
-                side_effect=[POKEMON_FIXTURE, SPECIES_FIXTURE],
-            ),
-            patch("fetch_pokemon.time.sleep"),
-        ):
-            fetch_pokemon.process_pokemon(client_mock, db, 1)
+    with (
+        patch(
+            "fetch_pokemon.fetch_json",
+            side_effect=[fixture, SPECIES_FIXTURE],
+        ),
+        patch("fetch_pokemon.time.sleep"),
+    ):
+        fetch_pokemon.process_pokemon(client_mock, db_session, 999999)
 
-        pokemon = db.query(Pokemon).filter_by(id=1).first()
-        assert pokemon is not None
-        assert pokemon.name_en == "Bulbasaur"
-        assert pokemon.name_fr == "Bulbizarre"
-        assert pokemon.name == "Bulbizarre"
-        assert pokemon.hp == 45
+    pokemon = db_session.query(Pokemon).filter_by(id=999999).first()
+    assert pokemon is not None
+    assert pokemon.name_en == "Bulbasaur"
+    assert pokemon.name_fr == "Bulbizarre"
+    assert pokemon.name == "Bulbizarre"
+    assert pokemon.hp == 45

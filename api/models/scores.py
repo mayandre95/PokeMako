@@ -12,6 +12,11 @@ class PokemonScore(Base):
     offensive_score = Column(Integer)  # atk + sp_atk + speed
     tank_score = Column(Integer)  # hp + def + sp_def
     meta_score = Column(Float)  # score composite
+    attacker_score = Column(Float)  # rôle Attacker
+    tank_role_score = Column(Float)  # rôle Tank (distinct de tank_score, MOD-B01)
+    support_score = Column(Float)  # rôle Support
+    sweeper_score = Column(Float)  # rôle Sweeper
+    versatility_score = Column(Float)  # équilibre entre les 4 rôles ci-dessus
     pokemon = relationship("Pokemon", back_populates="score")
 
 

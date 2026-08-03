@@ -1,3 +1,5 @@
+import statistics
+
 from models import Type, TypeEffectiveness
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -74,3 +76,33 @@ def compute_meta_score(
 
     bonus = immunities * 10 + resistances * 5 - weaknesses * 10
     return float(power + bonus)
+
+
+def compute_role_scores(pokemon) -> dict[str, float]:
+    hp = pokemon.hp or 0
+    atk = pokemon.attack or 0
+    df = pokemon.defense or 0
+    spa = pokemon.sp_attack or 0
+    spd = pokemon.sp_defense or 0
+    spe = pokemon.speed or 0
+
+    attacker = max(atk, spa) * 1.5 + min(atk, spa) * 0.5
+    tank = hp * 1.5 + (df + spd) * 0.75
+    support = hp * 0.8 + (df + spd) * 0.6 + spe * 0.6
+    sweeper = (atk + spa) * 1.2 + spe * 0.8
+
+    # Écart-type de population (pas d'échantillon) : on a les 4 valeurs exhaustives, pas un tirage.
+    base_roles = [attacker, tank, support, sweeper]
+    versatility = statistics.mean(base_roles) - statistics.pstdev(base_roles)
+
+    return {
+        "attacker_score": round(attacker, 2),
+        "tank_role_score": round(tank, 2),
+        "support_score": round(support, 2),
+        "sweeper_score": round(sweeper, 2),
+        "versatility_score": round(versatility, 2),
+    }
+
+
+def compute_dominant_role(role_scores: dict[str, float]) -> str:
+    return max(role_scores, key=role_scores.get)

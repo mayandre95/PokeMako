@@ -1,3 +1,5 @@
+import type { RoleKey } from '../constants/roleLabels'
+
 const API_BASE = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 const POKEAPI = 'https://pokeapi.co/api/v2'
 
@@ -102,6 +104,12 @@ export interface ScoresData {
   tank_score: number
   meta_score: number
   generation_used: number
+  attacker_score: number
+  tank_role_score: number
+  support_score: number
+  sweeper_score: number
+  versatility_score: number
+  dominant_role: RoleKey
 }
 
 export interface ScoreHistoryPoint {

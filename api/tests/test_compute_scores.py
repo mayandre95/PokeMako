@@ -91,3 +91,28 @@ def test_run_loads_chart_once_per_generation():
     # Deux generations distinctes (1 et 2) → deux appels
     assert mock_chart.call_count == 2
     db.commit.assert_called_once()
+
+
+def test_run_includes_role_scores():
+    """run() calcule aussi les 5 scores de rôle et les inclut dans l'upsert."""
+    poke = _make_pokemon()
+    db = _make_db([poke])
+
+    with (
+        patch("compute_scores.SessionLocal", return_value=db),
+        patch("compute_scores._load_type_chart", return_value={}),
+        patch(
+            "compute_scores.compute_role_scores",
+            return_value={
+                "attacker_score": 1.0,
+                "tank_role_score": 2.0,
+                "support_score": 3.0,
+                "sweeper_score": 4.0,
+                "versatility_score": 5.0,
+            },
+        ) as mock_roles,
+    ):
+        compute_scores.run()
+
+    mock_roles.assert_called_once_with(poke)
+    db.execute.assert_called_once()

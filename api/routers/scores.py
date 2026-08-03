@@ -5,7 +5,7 @@ from database import get_db
 from fastapi import APIRouter, Depends, HTTPException, Request
 from limiter import limiter
 from models import Pokemon, PokemonScore
-from scoring import compute_meta_score
+from scoring import compute_dominant_role, compute_meta_score
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/pokemon", tags=["Scores"])
@@ -48,6 +48,14 @@ def get_scores(
         meta = score.meta_score
         generation_used = pokemon.generation
 
+    role_scores = {
+        "attacker_score": score.attacker_score,
+        "tank_role_score": score.tank_role_score,
+        "support_score": score.support_score,
+        "sweeper_score": score.sweeper_score,
+        "versatility_score": score.versatility_score,
+    }
+
     result = {
         "pokemon_id": pokemon_id,
         "power_score": score.power_score,
@@ -55,6 +63,8 @@ def get_scores(
         "tank_score": score.tank_score,
         "meta_score": meta,
         "generation_used": generation_used,
+        **role_scores,
+        "dominant_role": compute_dominant_role(role_scores),
     }
     set_cache(cache_key, result, ttl=60 * 60 * 24)
     return result

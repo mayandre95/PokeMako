@@ -96,3 +96,49 @@ def test_compute_meta_score_dual_type_multiplies():
 
     # 100 − 1×10 = 90
     assert result == 90.0
+
+
+def _make_role_pokemon(hp, atk, def_, spatk, spdef, speed):
+    p = MagicMock()
+    p.hp, p.attack, p.defense = hp, atk, def_
+    p.sp_attack, p.sp_defense, p.speed = spatk, spdef, speed
+    return p
+
+
+def test_role_scores_blissey_is_tank_dominant():
+    """Blissey (255/10/10/75/135/55) : Tank domine, Support est 2e — cas d'acceptation du ticket."""
+    from scoring import compute_dominant_role, compute_role_scores
+
+    blissey = _make_role_pokemon(hp=255, atk=10, def_=10, spatk=75, spdef=135, speed=55)
+    scores = compute_role_scores(blissey)
+
+    assert compute_dominant_role(scores) == "tank_role_score"
+    ranked = sorted(scores, key=scores.get, reverse=True)
+    assert ranked[1] == "support_score"
+
+
+def test_role_scores_alakazam_is_sweeper_dominant():
+    """Alakazam (55/50/45/135/95/120) : Sweeper domine — cas d'acceptation du ticket."""
+    from scoring import compute_dominant_role, compute_role_scores
+
+    alakazam = _make_role_pokemon(
+        hp=55, atk=50, def_=45, spatk=135, spdef=95, speed=120
+    )
+    scores = compute_role_scores(alakazam)
+
+    assert compute_dominant_role(scores) == "sweeper_score"
+
+
+def test_versatility_never_exceeds_max_base_role():
+    """Propriété mathématique : une moyenne ne dépasse jamais le max de son échantillon."""
+    from scoring import compute_role_scores
+
+    mon = _make_role_pokemon(hp=100, atk=100, def_=100, spatk=100, spdef=100, speed=100)
+    scores = compute_role_scores(mon)
+    base = [
+        scores["attacker_score"],
+        scores["tank_role_score"],
+        scores["support_score"],
+        scores["sweeper_score"],
+    ]
+    assert scores["versatility_score"] <= max(base)

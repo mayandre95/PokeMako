@@ -12,6 +12,11 @@ _SCORE_ATTRS = {
     "offensive_score": 180,
     "tank_score": 175,
     "meta_score": 390.0,
+    "attacker_score": 120.0,
+    "tank_role_score": 300.0,
+    "support_score": 150.0,
+    "sweeper_score": 140.0,
+    "versatility_score": 100.0,
 }
 
 
@@ -201,3 +206,22 @@ def test_scores_history_pokemon_not_found():
         app.dependency_overrides.clear()
 
     assert resp.status_code == 404
+
+
+def test_get_scores_includes_dominant_role():
+    """La réponse inclut les 5 scores de rôle et le rôle dominant (tank_role_score ici, le plus élevé)."""
+    score = _make_score()
+    pokemon = _make_pokemon()
+    app.dependency_overrides[get_db] = lambda: _make_db(score, pokemon)
+    try:
+        with (
+            patch("routers.scores.get_cached", return_value=None),
+            patch("routers.scores.set_cache"),
+        ):
+            resp = client.get("/pokemon/1/scores")
+    finally:
+        app.dependency_overrides.clear()
+
+    data = resp.json()
+    assert data["dominant_role"] == "tank_role_score"
+    assert data["support_score"] == 150.0
