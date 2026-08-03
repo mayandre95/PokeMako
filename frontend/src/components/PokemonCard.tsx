@@ -3,6 +3,8 @@ import { TypeBadge } from './TypeBadge'
 import { StatBar } from './StatBar'
 import { STAT_LABELS } from '../constants/statLabels'
 import { SCORE_LABELS } from '../constants/scoreLabels'
+import { RoleScores } from './RoleScores'
+import type { RoleKey } from '../constants/roleLabels'
 import type {
   EncountersData,
   EvolutionNode,
@@ -237,6 +239,21 @@ export function PokemonCard({
           <p className="mt-2 text-xs text-gray-400 italic">
             Score méta calculé avec le méta Gen {scoresData.generation_used}
           </p>
+        </section>
+      )}
+      {scoresData && (
+        <section aria-label="Rôles" className="mt-6">
+          <h2 className="font-semibold text-gray-700 mb-3">Rôles</h2>
+          <RoleScores
+            scores={{
+              attacker_score: scoresData.attacker_score,
+              tank_role_score: scoresData.tank_role_score,
+              support_score: scoresData.support_score,
+              sweeper_score: scoresData.sweeper_score,
+              versatility_score: scoresData.versatility_score,
+            }}
+            dominantRole={scoresData.dominant_role as RoleKey}
+          />
         </section>
       )}
 

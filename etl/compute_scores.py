@@ -10,6 +10,7 @@ from scoring import (
     _load_type_chart,
     compute_offensive_score,
     compute_power_score,
+    compute_role_scores,
     compute_tank_score,
 )
 from sqlalchemy.dialects.postgresql import insert as pg_insert
@@ -51,6 +52,7 @@ def run():
                 "offensive_score": compute_offensive_score(pokemon),
                 "tank_score": compute_tank_score(pokemon),
                 "meta_score": meta,
+                **compute_role_scores(pokemon),
             }
             db.execute(
                 pg_insert(PokemonScore)
