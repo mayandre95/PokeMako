@@ -43,7 +43,11 @@ def _move_detail(client: httpx.Client, move_id: int) -> dict | None:
         "power": data.get("power"),
         "accuracy": data.get("accuracy"),
         "pp": data.get("pp"),
-        "ailment": data.get("meta", {}).get("ailment", {}).get("name"),
+        # .get(key, {}) ne renvoie le défaut que si la clé est absente — or
+        # PokéAPI renvoie parfois "meta": null explicitement (pas juste
+        # absent), auquel cas .get() retourne None et non {}. `or {}` couvre
+        # les deux cas (absent ET présent-mais-null).
+        "ailment": ((data.get("meta") or {}).get("ailment") or {}).get("name"),
         "effect_fr": effect_fr,
         "effect_en": effect_en,
     }

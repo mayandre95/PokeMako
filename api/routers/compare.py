@@ -5,7 +5,7 @@ from database import get_db
 from fastapi import APIRouter, Depends, Request
 from limiter import limiter
 from models import Pokemon, PokemonScore, PokemonType
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session, joinedload
 
 router = APIRouter(tags=["Compare"])
@@ -24,12 +24,14 @@ def search_pokemon(
     if len(q) < 2:
         return []
     pattern = f"%{q}%"
+    # unaccent() des deux côtés : "leviator" doit trouver "Léviator" sans que
+    # l'utilisateur ait à taper l'accent (extension Postgres, cf. migration).
     results = (
         db.query(Pokemon)
         .filter(
             or_(
-                Pokemon.name_fr.ilike(pattern),
-                Pokemon.name_en.ilike(pattern),
+                func.unaccent(Pokemon.name_fr).ilike(func.unaccent(pattern)),
+                func.unaccent(Pokemon.name_en).ilike(func.unaccent(pattern)),
             )
         )
         .limit(min(limit, 20))

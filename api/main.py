@@ -9,6 +9,7 @@ from routers.moves import router as moves_router
 from routers.moveset import router as moveset_router
 from routers.pokemon import router as pokemon_router
 from routers.scores import router as scores_router
+from routers.team import router as team_router
 from security import verify_api_key
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -34,6 +35,7 @@ app.include_router(scores_router)
 app.include_router(analytics_router)
 app.include_router(compare_router)
 app.include_router(moveset_router)
+app.include_router(team_router)
 
 
 @app.get("/health", tags=["Infra"])
