@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Pokemon } from '../api/pokemon'
 import { TypeBadge } from './TypeBadge'
 import { StatBar } from './StatBar'
@@ -16,6 +17,7 @@ import { EvolutionTree } from './EvolutionTree'
 import { LocationTable } from './LocationTable'
 import { MovesTable } from './MovesTable'
 import { ScoreBar } from './ScoreBar'
+import { MovesetRecommendation } from './MovesetRecommendation'
 import Plot from 'react-plotly.js'
 
 function groupHistory(history: ScoreHistoryPoint[]) {
@@ -70,6 +72,7 @@ export function PokemonCard({
 }: Props) {
   const displayName = pokemon.name_fr ?? pokemon.name_en
   const numStr = String(pokemon.id).padStart(4, '0')
+  const [versionGroup, setVersionGroup] = useState('')
 
   return (
     <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-lg p-6">
@@ -157,7 +160,22 @@ export function PokemonCard({
       {movesData && movesData.moves.length > 0 && (
         <section aria-label="Attaques" className="mt-6">
           <h2 className="font-semibold text-gray-700 mb-3">Attaques</h2>
-          <MovesTable moves={movesData.moves} />
+          <MovesTable
+            moves={movesData.moves}
+            onVersionGroupChange={setVersionGroup}
+          />
+        </section>
+      )}
+
+      {movesData && movesData.moves.length > 0 && (
+        <section aria-label="Moveset recommandé" className="mt-6">
+          <h2 className="font-semibold text-gray-700 mb-3">
+            Moveset recommandé
+          </h2>
+          <MovesetRecommendation
+            pokemonId={pokemon.id}
+            versionGroup={versionGroup}
+          />
         </section>
       )}
 

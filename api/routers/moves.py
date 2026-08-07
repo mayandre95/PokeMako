@@ -43,6 +43,7 @@ def _move_detail(client: httpx.Client, move_id: int) -> dict | None:
         "power": data.get("power"),
         "accuracy": data.get("accuracy"),
         "pp": data.get("pp"),
+        "ailment": data.get("meta", {}).get("ailment", {}).get("name"),
         "effect_fr": effect_fr,
         "effect_en": effect_en,
     }

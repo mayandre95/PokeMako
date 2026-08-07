@@ -134,7 +134,7 @@ export const VERSION_GROUP_ORDER: string[] = [
   'ultra-sun-ultra-moon',
   'lets-go-pikachu-lets-go-eevee',
   'sword-shield',
-  'brilliant-diamond-and-shining-pearl',
+  'brilliant-diamond-shining-pearl',
   'legends-arceus',
   'scarlet-violet',
 ]
@@ -158,7 +158,18 @@ export const VERSION_GROUP_FR: Record<string, string> = {
   'ultra-sun-ultra-moon': 'Ultra-Soleil / Ultra-Lune',
   'lets-go-pikachu-lets-go-eevee': "Let's Go",
   'sword-shield': 'Épée / Bouclier',
-  'brilliant-diamond-and-shining-pearl': 'Diamant Étin. / Perle Scint.',
+  'brilliant-diamond-shining-pearl': 'Diamant Étin. / Perle Scint.',
   'legends-arceus': 'Légendes : Arceus',
   'scarlet-violet': 'Écarlate / Violet',
+}
+
+export function sortVersionGroups(groups: string[]): string[] {
+  return [...groups].sort((a, b) => {
+    const ia = VERSION_GROUP_ORDER.indexOf(a)
+    const ib = VERSION_GROUP_ORDER.indexOf(b)
+    if (ia === -1 && ib === -1) return a.localeCompare(b)
+    if (ia === -1) return 1
+    if (ib === -1) return -1
+    return ia - ib
+  })
 }

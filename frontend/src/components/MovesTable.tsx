@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import type { Move } from '../api/pokemon'
 import { TypeBadge } from './TypeBadge'
@@ -7,15 +7,16 @@ import {
   DAMAGE_CLASS_FR,
   DAMAGE_CLASS_COLORS,
 } from '../constants/methodNames'
-import { VERSION_GROUP_FR, VERSION_GROUP_ORDER } from '../constants/gameNames'
+import { VERSION_GROUP_FR, sortVersionGroups } from '../constants/gameNames'
 
 const METHOD_ORDER = ['level-up', 'machine', 'egg', 'tutor']
 
 interface Props {
   moves: Move[]
+  onVersionGroupChange?: (vg: string) => void
 }
 
-export function MovesTable({ moves }: Props) {
+export function MovesTable({ moves, onVersionGroupChange }: Props) {
   const methods = useMemo(
     () => METHOD_ORDER.filter((m) => moves.some((mv) => mv.method === m)),
     [moves]
@@ -23,29 +24,27 @@ export function MovesTable({ moves }: Props) {
 
   const [selectedMethod, setSelectedMethod] = useState<string>(methods[0] ?? '')
 
-  const versionGroups = useMemo(() => {
-    const unique = [
-      ...new Set(
-        moves
-          .filter((m) => m.method === selectedMethod)
-          .map((m) => m.version_group)
-      ),
-    ]
-    return unique.sort((a, b) => {
-      const ia = VERSION_GROUP_ORDER.indexOf(a)
-      const ib = VERSION_GROUP_ORDER.indexOf(b)
-      if (ia === -1 && ib === -1) return a.localeCompare(b)
-      if (ia === -1) return 1
-      if (ib === -1) return -1
-      return ia - ib
-    })
-  }, [moves, selectedMethod])
+  const versionGroups = useMemo(
+    () =>
+      sortVersionGroups([
+        ...new Set(
+          moves
+            .filter((m) => m.method === selectedMethod)
+            .map((m) => m.version_group)
+        ),
+      ]),
+    [moves, selectedMethod]
+  )
 
   const [selectedVg, setSelectedVg] = useState<string>('')
   const activeVg =
     selectedVg && versionGroups.includes(selectedVg)
       ? selectedVg
       : (versionGroups[versionGroups.length - 1] ?? '')
+
+  useEffect(() => {
+    onVersionGroupChange?.(activeVg)
+  }, [activeVg, onVersionGroupChange])
 
   const filtered = moves.filter(
     (m) => m.method === selectedMethod && m.version_group === activeVg

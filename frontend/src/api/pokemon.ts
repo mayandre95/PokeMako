@@ -118,6 +118,50 @@ export interface ScoreHistoryPoint {
   active: boolean
 }
 
+export interface RecommendedMove {
+  id: number
+  name_fr: string | null
+  name_en: string
+  type: string
+  damage_class: string
+  power: number | null
+  accuracy: number | null
+  pp: number | null
+  method: string
+  method_label: string | null
+  version_group: string
+  dps: number
+  types_covered: number
+  reason: string
+}
+
+export interface MovesetResult {
+  role: string
+  version_group: string
+  moves: RecommendedMove[]
+}
+
+export async function fetchMovesetRecommendation(
+  id: number,
+  role: string,
+  versionGroup: string,
+  excludeHm: boolean,
+  excludeTm: boolean
+): Promise<MovesetResult> {
+  const res = await fetch(`${API_BASE}/pokemon/${id}/recommend-moveset`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      role,
+      version_group: versionGroup,
+      exclude_hm: excludeHm,
+      exclude_tm: excludeTm,
+    }),
+  })
+  if (!res.ok) throw new Error(`recommend-moveset ${id}: ${res.status}`)
+  return res.json()
+}
+
 export async function fetchScoreHistory(
   id: number
 ): Promise<ScoreHistoryPoint[]> {
