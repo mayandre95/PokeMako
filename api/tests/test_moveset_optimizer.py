@@ -307,6 +307,8 @@ def test_recommend_moveset_exclude_hm_removes_hm_moves():
     with (
         patch("moveset_optimizer._load_type_chart", return_value={}),
         patch("moveset_optimizer.is_hm", side_effect=lambda c, mid, vg: mid == 1),
+        patch("moveset_optimizer.get_cached", return_value=None),
+        patch("moveset_optimizer.set_cache"),
     ):
         result = recommend_moveset(
             db, pokemon, movepool, "attacker", VG, True, False, MagicMock()
@@ -340,6 +342,8 @@ def test_recommend_moveset_exclude_tm_removes_tm_moves():
     with (
         patch("moveset_optimizer._load_type_chart", return_value={}),
         patch("moveset_optimizer.is_hm", side_effect=lambda c, mid, vg: mid == 1),
+        patch("moveset_optimizer.get_cached", return_value=None),
+        patch("moveset_optimizer.set_cache"),
     ):
         result = recommend_moveset(
             db, pokemon, movepool, "attacker", VG, False, True, MagicMock()
