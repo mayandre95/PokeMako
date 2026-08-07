@@ -9,6 +9,7 @@ from moveset_optimizer import (
     _has_enabler,
     _move_dps,
     _move_machines,
+    _select_candidates,
     _type_coverage,
     deduplicate_moves,
     filter_by_version_group,
@@ -387,3 +388,15 @@ def test_recommend_moveset_keeps_dependent_move_with_enabler():
 
     dream_eater = next(m for m in result if m["id"] == 138)
     assert "endormie" in dream_eater["reason"]
+
+
+def test_select_candidates_mixed_attacker_falls_back_to_all_damage_moves():
+    """Attaquant mixte (écart Atk/SpAtk ≤ 15) avec moins de 4 attaques dans sa
+    catégorie dominante : les deux catégories sont autorisées en complément."""
+    pokemon = MagicMock(attack=100, sp_attack=95, generation=1)
+    damage_moves = [_move(1, damage_class="physical")]
+    status_moves = [_move(2, damage_class="status", power=None)]
+
+    result = _select_candidates(damage_moves, status_moves, "attacker", pokemon)
+
+    assert result == damage_moves

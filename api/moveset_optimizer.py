@@ -163,18 +163,13 @@ def _reason(move: dict, role: str) -> str:
     return base
 
 
-def recommend_moveset(
-    db,
-    pokemon,
-    movepool: list[dict],
-    role: str,
+def _apply_machine_filters(
+    moves: list[dict],
     version_group: str,
     exclude_hm: bool,
     exclude_tm: bool,
     client: httpx.Client,
 ) -> list[dict]:
-    moves = deduplicate_moves(filter_by_version_group(movepool, version_group))
-
     if exclude_hm:
         moves = [
             m
@@ -187,21 +182,37 @@ def recommend_moveset(
             for m in moves
             if m["method"] != "machine" or is_hm(client, m["id"], version_group)
         ]
+    return moves
 
-    # Une attaque comme Dévorêve, sans aucune attaque infligeant le sommeil
-    # disponible pour ce Pokémon dans cette version, est inutile seule.
-    moves = [
+
+def _apply_dependency_filter(moves: list[dict]) -> list[dict]:
+    """Une attaque comme Dévorêve, sans aucune attaque infligeant le sommeil
+    disponible pour ce Pokémon dans cette version, est inutile seule."""
+    return [
         m
         for m in moves
         if m["id"] not in REQUIRES_AILMENT
         or _has_enabler(moves, REQUIRES_AILMENT[m["id"]])
     ]
 
+
+def _build_candidate_pool(
+    movepool: list[dict],
+    version_group: str,
+    exclude_hm: bool,
+    exclude_tm: bool,
+    client: httpx.Client,
+) -> list[dict]:
+    moves = deduplicate_moves(filter_by_version_group(movepool, version_group))
+    moves = _apply_machine_filters(moves, version_group, exclude_hm, exclude_tm, client)
+    return _apply_dependency_filter(moves)
+
+
+def _score_moves(moves: list[dict], db, pokemon) -> list[dict]:
     type_name_to_id = {t.name: t.id for t in db.query(Type).all()}
     chart = _load_type_chart(db, pokemon.generation or 1)
     all_type_ids = list(type_name_to_id.values())
-
-    scored = [
+    return [
         {
             **move,
             "dps": round(_move_dps(move), 1),
@@ -212,30 +223,62 @@ def recommend_moveset(
         for move in moves
     ]
 
+
+def _interleave(primary: list[dict], secondary: list[dict]) -> list[dict]:
+    """Alterne deux listes déjà triées (ex. attaques offensives / de statut),
+    en piochant à tour de rôle un élément de chaque tant qu'il en reste."""
+    result = []
+    for i in range(max(len(primary), len(secondary))):
+        if i < len(primary):
+            result.append(primary[i])
+        if i < len(secondary):
+            result.append(secondary[i])
+    return result
+
+
+def _select_candidates(
+    damage_moves: list[dict], status_moves: list[dict], role: str, pokemon
+) -> list[dict]:
+    if role in ATTACKING_ROLES:
+        dominant = _dominant_damage_class(pokemon)
+        specialized = [m for m in damage_moves if m["damage_class"] == dominant]
+        is_mixed = abs((pokemon.attack or 0) - (pokemon.sp_attack or 0)) <= 15
+        if len(specialized) >= 4 or not is_mixed:
+            return specialized
+        return damage_moves
+    if role in UTILITY_ROLES:
+        return status_moves + damage_moves
+    return _interleave(damage_moves, status_moves)  # versatility
+
+
+def _finalize(
+    selected: list[dict], role: str, version_group: str, client: httpx.Client
+) -> list[dict]:
+    for move in selected:
+        move["method_label"] = method_label(client, move, version_group)
+        move["reason"] = _reason(move, role)
+    return selected
+
+
+def recommend_moveset(
+    db,
+    pokemon,
+    movepool: list[dict],
+    role: str,
+    version_group: str,
+    exclude_hm: bool,
+    exclude_tm: bool,
+    client: httpx.Client,
+) -> list[dict]:
+    moves = _build_candidate_pool(
+        movepool, version_group, exclude_hm, exclude_tm, client
+    )
+    scored = _score_moves(moves, db, pokemon)
+
     damage_moves = [m for m in scored if m["damage_class"] != "status" and m["power"]]
     status_moves = [m for m in scored if m["damage_class"] == "status"]
     damage_moves.sort(key=_score_damage_move, reverse=True)
     status_moves.sort(key=_score_status_move, reverse=True)
 
-    if role in ATTACKING_ROLES:
-        dominant = _dominant_damage_class(pokemon)
-        specialized = [m for m in damage_moves if m["damage_class"] == dominant]
-        is_mixed = abs((pokemon.attack or 0) - (pokemon.sp_attack or 0)) <= 15
-        candidates = (
-            specialized if (len(specialized) >= 4 or not is_mixed) else damage_moves
-        )
-    elif role in UTILITY_ROLES:
-        candidates = status_moves + damage_moves
-    else:  # versatility
-        candidates = []
-        for i in range(max(len(damage_moves), len(status_moves))):
-            if i < len(damage_moves):
-                candidates.append(damage_moves[i])
-            if i < len(status_moves):
-                candidates.append(status_moves[i])
-
-    selected = candidates[:4]
-    for move in selected:
-        move["method_label"] = method_label(client, move, version_group)
-        move["reason"] = _reason(move, role)
-    return selected
+    candidates = _select_candidates(damage_moves, status_moves, role, pokemon)
+    return _finalize(candidates[:4], role, version_group, client)
