@@ -12,6 +12,7 @@ import { PokemonSearchBar } from './components/PokemonSearchBar'
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage'))
 const ComparePage = lazy(() => import('./pages/ComparePage'))
+const TeamBuilderPage = lazy(() => import('./pages/TeamBuilderPage'))
 
 function HomePage() {
   const samples = [1, 4, 7, 25, 133, 150]
@@ -50,6 +51,12 @@ function HomePage() {
         >
           Comparateur
         </Link>
+        <Link
+          to="/team"
+          className="px-6 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+        >
+          Team Builder
+        </Link>
       </div>
     </div>
   )
@@ -79,6 +86,16 @@ export default function App() {
               fallback={<div className="p-8 text-center">Chargement…</div>}
             >
               <ComparePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/team"
+          element={
+            <Suspense
+              fallback={<div className="p-8 text-center">Chargement…</div>}
+            >
+              <TeamBuilderPage />
             </Suspense>
           }
         />

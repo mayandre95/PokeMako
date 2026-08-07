@@ -44,6 +44,45 @@ def test_types_from_db():
     assert data[1] == {"type": "fire", "count": 64}
 
 
+def test_type_chart_from_cache():
+    """Cache hit → DB non appelée."""
+    cached = {"generation": 9, "types": ["fire"], "matrix": {"fire": {"fire": 0.5}}}
+    with patch("routers.analytics.get_cached", return_value=cached):
+        resp = client.get("/analytics/type-chart")
+    assert resp.status_code == 200
+    assert resp.json() == cached
+
+
+def test_type_chart_builds_full_matrix():
+    """2 types en DB → matrice 2×2 avec les multiplicateurs du chart."""
+    # .name ne peut pas être passé au constructeur MagicMock() : c'est un
+    # paramètre spécial (nom interne du mock pour son repr), pas un moyen de
+    # définir l'attribut .name — il faut l'assigner après coup.
+    fire, grass = MagicMock(), MagicMock()
+    fire.id, fire.name = 1, "fire"
+    grass.id, grass.name = 2, "grass"
+    db = MagicMock()
+    db.query.return_value.order_by.return_value.all.return_value = [fire, grass]
+
+    app.dependency_overrides[get_db] = lambda: db
+    try:
+        with (
+            patch("routers.analytics.get_cached", return_value=None),
+            patch("routers.analytics.set_cache"),
+            patch("routers.analytics._load_type_chart", return_value={(1, 2): 2.0}),
+        ):
+            resp = client.get("/analytics/type-chart?generation=9")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["generation"] == 9
+    assert data["types"] == ["fire", "grass"]
+    assert data["matrix"]["fire"]["grass"] == 2.0
+    assert data["matrix"]["fire"]["fire"] == 1.0  # absent du chart → neutre
+
+
 def test_generations_from_cache():
     """Cache hit → DB non appelée."""
     cached = [

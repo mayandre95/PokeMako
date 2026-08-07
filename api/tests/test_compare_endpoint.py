@@ -137,3 +137,22 @@ def test_search_too_short():
     resp = client.get("/search?q=p")
     assert resp.status_code == 200
     assert resp.json() == []
+
+
+def test_search_is_accent_insensitive(db_session):
+    """Taper "leviator" (sans accent) doit trouver "Léviator"."""
+    from models import Pokemon
+
+    db_session.add(
+        Pokemon(id=999904, name_en="gyarados-test", name_fr="Léviator", generation=1)
+    )
+    db_session.commit()
+
+    app.dependency_overrides[get_db] = lambda: db_session
+    try:
+        resp = client.get("/search?q=leviator")
+    finally:
+        app.dependency_overrides.clear()
+
+    assert resp.status_code == 200
+    assert any(r["name_fr"] == "Léviator" for r in resp.json())

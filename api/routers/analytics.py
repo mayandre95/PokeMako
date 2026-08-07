@@ -6,6 +6,7 @@ from database import get_db
 from fastapi import APIRouter, Depends, Request
 from limiter import limiter
 from models import Pokemon, PokemonScore, PokemonType, Type
+from scoring import _load_type_chart
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -30,6 +31,36 @@ def get_type_distribution(request: Request, db: Annotated[Session, Depends(get_d
         .all()
     )
     result = [{"type": r.name, "count": r.count} for r in rows]
+    set_cache(cache_key, result, ttl=TTL)
+    return result
+
+
+@router.get("/type-chart")
+@limiter.limit(RATE_LIMIT)
+def get_type_chart(
+    request: Request,
+    generation: int = 9,
+    db: Annotated[Session, Depends(get_db)] = None,
+):
+    """Matrice complète d'efficacité des types (18×18), générale — pas propre
+    à une équipe (cf. MOD-C03, /team/analyze, pour la version par équipe).
+    Réutilise _load_type_chart (MOD-B01), déjà generation-aware."""
+    cache_key = f"analytics:type-chart:{generation}"
+    if cached := get_cached(cache_key):
+        return cached
+
+    chart = _load_type_chart(db, generation)
+    types = db.query(Type).order_by(Type.id).all()
+    type_names = [t.name for t in types]
+
+    matrix = {
+        attacker.name: {
+            defender.name: chart.get((attacker.id, defender.id), 1.0)
+            for defender in types
+        }
+        for attacker in types
+    }
+    result = {"generation": generation, "types": type_names, "matrix": matrix}
     set_cache(cache_key, result, ttl=TTL)
     return result
 

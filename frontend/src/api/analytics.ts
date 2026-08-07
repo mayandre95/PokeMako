@@ -22,6 +22,12 @@ export interface ScatterPoint {
   primary_type: string | null
 }
 
+export interface TypeChartData {
+  generation: number
+  types: string[]
+  matrix: Record<string, Record<string, number>>
+}
+
 export const fetchTypeDistribution = (): Promise<TypeDistribution[]> =>
   fetch(`${API}/analytics/types`).then((r) => r.json())
 
@@ -30,3 +36,8 @@ export const fetchGenerationStats = (): Promise<GenerationStats[]> =>
 
 export const fetchScatterData = (): Promise<ScatterPoint[]> =>
   fetch(`${API}/analytics/scatter`).then((r) => r.json())
+
+export const fetchTypeChart = (generation = 9): Promise<TypeChartData> =>
+  fetch(`${API}/analytics/type-chart?generation=${generation}`).then((r) =>
+    r.json()
+  )

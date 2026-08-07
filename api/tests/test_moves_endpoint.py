@@ -100,7 +100,34 @@ def test_move_detail_found():
         result = _move_detail(mock_client, 33)
     assert result["name_fr"] == "Charge"
     assert result["power"] == 40
+    assert result["ailment"] is None  # pas de clé "meta" du tout dans le fixture
     mock_set.assert_called_once()
+
+
+def test_move_detail_extracts_ailment_from_meta():
+    move_with_meta = {**_SAMPLE_MOVE, "meta": {"ailment": {"name": "sleep"}}}
+    mock_client = MagicMock()
+    mock_client.get.return_value = _http_resp(200, move_with_meta)
+    with (
+        patch("routers.moves.get_cached", return_value=None),
+        patch("routers.moves.set_cache"),
+    ):
+        result = _move_detail(mock_client, 33)
+    assert result["ailment"] == "sleep"
+
+
+def test_move_detail_handles_null_meta():
+    """PokéAPI renvoie parfois "meta": null explicitement (pas juste absent)
+    — .get("meta", {}) ne rattraperait pas ce cas, seul `or {}` le fait."""
+    move_with_null_meta = {**_SAMPLE_MOVE, "meta": None}
+    mock_client = MagicMock()
+    mock_client.get.return_value = _http_resp(200, move_with_null_meta)
+    with (
+        patch("routers.moves.get_cached", return_value=None),
+        patch("routers.moves.set_cache"),
+    ):
+        result = _move_detail(mock_client, 33)
+    assert result["ailment"] is None
 
 
 def test_move_detail_api_error():
