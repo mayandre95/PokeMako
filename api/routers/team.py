@@ -20,6 +20,7 @@ router = APIRouter(prefix="/team", tags=["Team Builder"])
 
 RATE_LIMIT = "20/minute"
 NOT_FOUND_DETAIL = "Aucun Pokémon trouvé pour ces IDs"
+GENERATION_TOO_LOW_DETAIL = "Génération incompatible avec l'équipe"
 
 
 def _summary(p: Pokemon) -> dict:
@@ -37,6 +38,7 @@ def _summary(p: Pokemon) -> dict:
 @router.post(
     "/analyze",
     responses={
+        400: {"description": GENERATION_TOO_LOW_DETAIL},
         404: {"description": NOT_FOUND_DETAIL},
         429: {"description": "Trop de requêtes — réessayez dans 60s"},
     },
