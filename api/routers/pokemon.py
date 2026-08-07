@@ -84,55 +84,9 @@ def get_moves(request: Request, pokemon_id: int):
     if cached := get_cached(cache_key):
         return cached
 
-    with httpx.Client(timeout=10.0) as client:
-        resp = client.get(f"{POKEAPI}/pokemon/{pokemon_id}")
-        if resp.status_code == 404:
-            raise HTTPException(status_code=404, detail=NOT_FOUND_DETAIL)
-        resp.raise_for_status()
-
-        # Une entrée par (move_id, method, version_group)
-        move_entries: dict[tuple[int, str, str], dict] = {}
-        for mv in resp.json()["moves"]:
-            move_id = int(mv["move"]["url"].rstrip("/").split("/")[-1])
-            for vd in mv["version_group_details"]:
-                method = vd["move_learn_method"]["name"]
-                level = vd["level_learned_at"]
-                vg = vd["version_group"]["name"]
-                key = (move_id, method, vg)
-                if key not in move_entries:
-                    move_entries[key] = {
-                        "id": move_id,
-                        "method": method,
-                        "level_learned": level,
-                        "version_group": vg,
-                    }
-                elif method == "level-up":
-                    # Même move, même version_group, même méthode → garder le niveau minimal
-                    move_entries[key]["level_learned"] = min(
-                        move_entries[key]["level_learned"], level
-                    )
-
-        unique_ids = {mid for (mid, _, _) in move_entries}
-        detail_map = {mid: _move_detail(client, mid) for mid in unique_ids}
+    moves = _build_movepool(pokemon_id)
 
     METHOD_ORDER = ["level-up", "machine", "egg", "tutor"]
-    moves = []
-    for (move_id, _method, _vg), entry in move_entries.items():
-        detail = detail_map.get(move_id)
-        if not detail:
-            continue
-        moves.append(
-            {
-                **entry,
-                "name_fr": detail["name_fr"],
-                "name_en": detail["name_en"],
-                "type": detail["type"],
-                "damage_class": detail["damage_class"],
-                "power": detail["power"],
-                "accuracy": detail["accuracy"],
-                "pp": detail["pp"],
-            }
-        )
 
     moves.sort(
         key=lambda m: (
@@ -197,3 +151,58 @@ def get_encounters(request: Request, pokemon_id: int):
     result = {"encounters": encounters, "has_encounters": bool(encounters)}
     set_cache(cache_key, result)
     return result
+
+
+def _build_movepool(pokemon_id: int) -> list[dict]:
+    """Movepool complet (toutes méthodes), PokéAPI + cache Redis 30 jours via
+    _move_detail. Réutilisée par /pokemon/{id}/moves ET par la recommandation
+    de moveset (MOD-C02) — contrairement à la table pokemon_moves en base, qui
+    ne stocke que les attaques apprises par niveau (etl/fetch_pokemon.py)."""
+    with httpx.Client(timeout=10.0) as client:
+        resp = client.get(f"{POKEAPI}/pokemon/{pokemon_id}")
+        if resp.status_code == 404:
+            raise HTTPException(status_code=404, detail=NOT_FOUND_DETAIL)
+        resp.raise_for_status()
+
+        move_entries: dict[tuple[int, str, str], dict] = {}
+        for mv in resp.json()["moves"]:
+            move_id = int(mv["move"]["url"].rstrip("/").split("/")[-1])
+            for vd in mv["version_group_details"]:
+                method = vd["move_learn_method"]["name"]
+                level = vd["level_learned_at"]
+                vg = vd["version_group"]["name"]
+                key = (move_id, method, vg)
+                if key not in move_entries:
+                    move_entries[key] = {
+                        "id": move_id,
+                        "method": method,
+                        "level_learned": level,
+                        "version_group": vg,
+                    }
+                elif method == "level-up":
+                    move_entries[key]["level_learned"] = min(
+                        move_entries[key]["level_learned"], level
+                    )
+
+        unique_ids = {mid for (mid, _, _) in move_entries}
+        detail_map = {mid: _move_detail(client, mid) for mid in unique_ids}
+
+    moves = []
+    for (move_id, _method, _vg), entry in move_entries.items():
+        detail = detail_map.get(move_id)
+        if not detail:
+            continue
+        moves.append(
+            {
+                **entry,
+                "name_fr": detail["name_fr"],
+                "name_en": detail["name_en"],
+                "type": detail["type"],
+                "damage_class": detail["damage_class"],
+                "power": detail["power"],
+                "accuracy": detail["accuracy"],
+                "pp": detail["pp"],
+                "ailment": detail.get("ailment"),
+            }
+        )
+    return moves

@@ -6,6 +6,7 @@ from models import Pokemon
 from routers.analytics import router as analytics_router
 from routers.compare import router as compare_router
 from routers.moves import router as moves_router
+from routers.moveset import router as moveset_router
 from routers.pokemon import router as pokemon_router
 from routers.scores import router as scores_router
 from security import verify_api_key
@@ -32,6 +33,7 @@ app.include_router(moves_router)
 app.include_router(scores_router)
 app.include_router(analytics_router)
 app.include_router(compare_router)
+app.include_router(moveset_router)
 
 
 @app.get("/health", tags=["Infra"])

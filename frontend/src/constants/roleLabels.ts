@@ -53,3 +53,15 @@ export const ROLE_LABELS: {
     color: '#6366f1',
   },
 ]
+
+export const MOVESET_ROLE_OPTIONS: {
+  value: 'attacker' | 'tank' | 'support' | 'sweeper' | 'versatility'
+  label: string
+  color: string
+}[] = [
+  { value: 'attacker', label: 'Attaquant', color: '#ef4444' },
+  { value: 'tank', label: 'Tank', color: '#22c55e' },
+  { value: 'support', label: 'Support', color: '#8b5cf6' },
+  { value: 'sweeper', label: 'Sweeper', color: '#f59e0b' },
+  { value: 'versatility', label: 'Polyvalent', color: '#6366f1' },
+]
